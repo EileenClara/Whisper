@@ -108,20 +108,16 @@ GyroEvent Gyro::update() {
         // ---- 敲击计数态：2秒窗口内等待更多敲击 ----
         case STATE_TAP_COUNTING:
             if (now - _stateEnterTime > TAP_COUNT_WINDOW_MS) {
-                // 窗口超时：检查敲击次数
-                if (_tapCount >= TAP_REQUIRED_COUNT) {
-                    event = GYRO_MULTI_TAP;
-                    Serial.printf("[Gyro] 连续敲击 %d 次 → 消息菜单\n", _tapCount);
-                } else {
-                    Serial.printf("[Gyro] 敲击 %d 次（不足%d次）→ 忽略\n", _tapCount, TAP_REQUIRED_COUNT);
-                }
+                // 窗口超时：按最终计数触发
+                if (_tapCount >= TAP_STATUS_COUNT)       event = GYRO_TAP_4;
+                else if (_tapCount >= TAP_MSG_COUNT)     event = GYRO_TAP_3;
+                else Serial.printf("[Gyro] 敲击 %d 次（不足）→ 忽略\n", _tapCount);
                 _state = STATE_COOLDOWN;
                 _stateEnterTime = now;
                 _tapCount = 0;
             }
             else if (isShake) {
-                // 计数窗口内发生摇动 → 取消计数，转为心跳模式
-                Serial.println("[Gyro] 计数窗口内检测到摇动 → 转为心跳");
+                Serial.println("[Gyro] 计数窗口内摇动 → 转为心跳");
                 _tapCount = 0;
                 _state = STATE_HEARTBEAT_MODE;
                 _stateEnterTime = now;
@@ -129,19 +125,24 @@ GyroEvent Gyro::update() {
                 event = GYRO_SHAKE;
             }
             else if (isTap && now - _lastTapTime > TAP_DEBOUNCE_MS) {
-                // 又一次敲击
                 _tapCount++;
                 _lastTapTime = now;
-                Serial.printf("[Gyro] 敲击检测 #%d (窗口剩余 %lu ms)\n",
+                Serial.printf("[Gyro] 敲击 #%d (剩余%lums)\n",
                               _tapCount, TAP_COUNT_WINDOW_MS - (now - _stateEnterTime));
 
-                // 如果已达到目标次数，立即触发
-                if (_tapCount >= TAP_REQUIRED_COUNT) {
-                    event = GYRO_MULTI_TAP;
-                    Serial.printf("[Gyro] 连续敲击 %d 次 → 消息菜单\n", _tapCount);
+                // 达到4次 → 立即触发状态菜单
+                if (_tapCount >= TAP_STATUS_COUNT) {
+                    event = GYRO_TAP_4;
+                    Serial.println("[Gyro] 敲4下 → 状态菜单");
                     _state = STATE_COOLDOWN;
                     _stateEnterTime = now;
                     _tapCount = 0;
+                }
+                // 达到3次 → 立即触发消息菜单
+                else if (_tapCount == TAP_MSG_COUNT) {
+                    event = GYRO_TAP_3;
+                    Serial.println("[Gyro] 敲3下 → 消息菜单");
+                    // 不退出计数态，可能还有第4下
                 }
             }
             break;
@@ -164,28 +165,47 @@ GyroEvent Gyro::update() {
             }
             break;
 
-        // ---- 菜单模式：敲击切换，静置发送 ----
-        case STATE_MENU_MODE:
+        // ---- 消息菜单：敲击切换，静置发送 ----
+        case STATE_MSG_MENU:
             if (isTap && now - _lastTapTime > TAP_DEBOUNCE_MS) {
-                // 敲击 → 切换下一条消息
                 _menuIndex = (_menuIndex + 1) % PRESET_MESSAGES_COUNT;
                 _lastTapTime = now;
                 event = GYRO_TAP;
-                Serial.printf("[Gyro] 菜单切换 → [%d] %s\n", _menuIndex, PRESET_MESSAGES[_menuIndex]);
+                Serial.printf("[Gyro] 消息切换 → [%d] %s\n", _menuIndex, PRESET_MESSAGES[_menuIndex]);
             }
             else if (now - _lastMovementTime > SHAKE_MENU_TIMEOUT) {
-                // 静置超时 → 发送当前选中消息
                 event = GYRO_MENU_TIMEOUT;
-                Serial.printf("[Gyro] 菜单静置超时 → 发送: %s\n", PRESET_MESSAGES[_menuIndex]);
+                Serial.printf("[Gyro] 消息菜单超时 → 发送: %s\n", PRESET_MESSAGES[_menuIndex]);
                 _state = STATE_COOLDOWN;
                 _stateEnterTime = now;
             }
-            // 如果在菜单中摇动，也切换（备用操作）
             else if (isShake && now - _lastShakeTime > 500) {
                 _menuIndex = (_menuIndex + 1) % PRESET_MESSAGES_COUNT;
                 _lastShakeTime = now;
                 event = GYRO_TAP;
-                Serial.printf("[Gyro] 菜单摇动切换 → [%d] %s\n", _menuIndex, PRESET_MESSAGES[_menuIndex]);
+            }
+            break;
+
+        // ---- 状态菜单：敲击切换状态，静置确认 ----
+        case STATE_STATUS_MENU:
+            if (isTap && now - _lastTapTime > TAP_DEBOUNCE_MS) {
+                _menuIndex = (_menuIndex + 1) % STATUS_OPTIONS_COUNT;
+                _lastTapTime = now;
+                event = GYRO_TAP;
+                Serial.printf("[Gyro] 状态切换 → [%d] %s%s\n",
+                              _menuIndex, STATUS_OPTIONS[_menuIndex].emoji,
+                              STATUS_OPTIONS[_menuIndex].label);
+            }
+            else if (now - _lastMovementTime > SHAKE_MENU_TIMEOUT) {
+                event = GYRO_MENU_TIMEOUT;
+                Serial.printf("[Gyro] 状态菜单超时 → 确认: %s\n", STATUS_OPTIONS[_menuIndex].label);
+                _state = STATE_COOLDOWN;
+                _stateEnterTime = now;
+            }
+            else if (isShake && now - _lastShakeTime > 500) {
+                _menuIndex = (_menuIndex + 1) % STATUS_OPTIONS_COUNT;
+                _lastShakeTime = now;
+                event = GYRO_TAP;
             }
             break;
 
@@ -215,16 +235,26 @@ void Gyro::getAccel(float& x, float& y, float& z) {
     x = _ax; y = _ay; z = _az;
 }
 
-bool Gyro::isHeartbeatMode() {
-    return _state == STATE_HEARTBEAT_MODE;
+bool Gyro::isHeartbeatMode() { return _state == STATE_HEARTBEAT_MODE; }
+bool Gyro::isMsgMenu()    { return _state == STATE_MSG_MENU; }
+bool Gyro::isStatusMenu() { return _state == STATE_STATUS_MENU; }
+
+int Gyro::getMenuIndex()  { return _menuIndex; }
+
+void Gyro::enterMsgMenu() {
+    _state = STATE_MSG_MENU;
+    _stateEnterTime = millis();
+    _menuIndex = 0;
+    _tapCount = 0;
+    _lastMovementTime = millis();
 }
 
-bool Gyro::isMenuMode() {
-    return _state == STATE_MENU_MODE;
-}
-
-int Gyro::getMenuIndex() {
-    return _menuIndex;
+void Gyro::enterStatusMenu() {
+    _state = STATE_STATUS_MENU;
+    _stateEnterTime = millis();
+    _menuIndex = 0;
+    _tapCount = 0;
+    _lastMovementTime = millis();
 }
 
 void Gyro::resetToIdle() {

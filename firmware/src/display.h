@@ -59,6 +59,9 @@ public:
     /** 快捷消息菜单 */
     void drawMessageMenu(int selectedIndex, const char* messages[], int count);
 
+    /** 状态选择菜单 */
+    void drawStatusMenu(int selectedIndex, const char* emojis[], const char* labels[], int count);
+
     /** 配网提示 */
     void drawWiFiSetupPrompt(const char* apName, const char* ip);
 

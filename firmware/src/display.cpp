@@ -186,6 +186,31 @@ void Display::drawMessageMenu(int selectedIndex, const char* messages[], int cou
     setBrightness(255);
 }
 
+void Display::drawStatusMenu(int selectedIndex, const char* emojis[], const char* labels[], int count) {
+    _tft.fillScreen(TFT_BLACK);
+    _tft.setTextColor(TFT_MAGENTA, TFT_BLACK);
+    _tft.drawString("设置状态 (敲击切换)", 6, 8, 2);
+    _tft.drawLine(6, 30, TFT_WIDTH - 6, 30, TFT_DARKGREY);
+
+    int y = 42;
+    for (int i = 0; i < count; i++) {
+        if (i == selectedIndex) {
+            _tft.fillRoundRect(6, y - 2, TFT_WIDTH - 12, 30, 4, TFT_MAGENTA);
+            _tft.setTextColor(TFT_WHITE, TFT_MAGENTA);
+        } else {
+            _tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+        }
+        char buf[40];
+        snprintf(buf, sizeof(buf), "%s  %s", emojis[i], labels[i]);
+        _tft.drawString(i == selectedIndex ? "> " : "  ", 12, y + 4, 2);
+        _tft.drawString(buf, 36, y + 4, 2);
+        y += 36;
+    }
+    _tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
+    _tft.drawString("静置3秒 = 确认", 6, TFT_HEIGHT - 20, 1);
+    setBrightness(255);
+}
+
 void Display::drawWiFiSetupPrompt(const char* apName, const char* ip) {
     _tft.fillScreen(TFT_BLACK);
     _tft.setTextColor(TFT_YELLOW, TFT_BLACK);
@@ -242,8 +267,8 @@ void Display::_drawStatusBar(int rssi, bool charging, bool muted) {
 void Display::_drawBottomBar() {
     _tft.drawLine(6, TFT_HEIGHT - 22, TFT_WIDTH - 6, TFT_HEIGHT - 22, TFT_DARKGREY);
     _tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
-    _tft.drawString("摇一摇 ❤️", 6, TFT_HEIGHT - 18, 1);
-    _tft.drawString("敲三下 消息", TFT_WIDTH - 76, TFT_HEIGHT - 18, 1);
+    _tft.drawString("摇一摇 ❤️", 4, TFT_HEIGHT - 18, 1);
+    _tft.drawString("敲3=消息 敲4=状态", TFT_WIDTH - 110, TFT_HEIGHT - 18, 1);
 }
 
 const char* Display::_getWeatherIcon(const char* iconCode) {

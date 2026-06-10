@@ -77,7 +77,8 @@ static unsigned long g_lastStatusPublish = 0;
 enum ScreenMode {
     SCREEN_HOME,
     SCREEN_HEARTBEAT,
-    SCREEN_MENU,
+    SCREEN_MSG_MENU,        // 快捷消息菜单
+    SCREEN_STATUS_MENU,     // 状态选择菜单
     SCREEN_HEART_ANIM,
     SCREEN_CONNECTING,
 };
@@ -256,40 +257,81 @@ void loop() {
             updateScreen();
             break;
 
-        case GYRO_MULTI_TAP:
-            // 敲三下 → 进入快捷消息菜单
+        case GYRO_TAP_3:
+            // 敲三下 → 消息菜单
             if (g_screenMode == SCREEN_HOME) {
                 Serial.println("[Main] 敲三下 → 消息菜单");
-                g_screenMode = SCREEN_MENU;
+                g_gyro.enterMsgMenu();
+                g_screenMode = SCREEN_MSG_MENU;
                 g_screenModeEnter = now;
-                g_gyro.resetToIdle();  // 进入菜单模式
-                // 强制陀螺仪进入菜单态
                 g_display.drawMessageMenu(0, PRESET_MESSAGES, PRESET_MESSAGES_COUNT);
                 g_display.setBrightness(255);
             }
             break;
 
+        case GYRO_TAP_4:
+            // 敲四下 → 状态菜单
+            if (g_screenMode == SCREEN_HOME) {
+                Serial.println("[Main] 敲四下 → 状态菜单");
+                g_gyro.enterStatusMenu();
+                g_screenMode = SCREEN_STATUS_MENU;
+                g_screenModeEnter = now;
+
+                // 提取 emoji 和 label 数组
+                static const char* statusEmojis[STATUS_OPTIONS_COUNT];
+                static const char* statusLabels[STATUS_OPTIONS_COUNT];
+                for (int i = 0; i < STATUS_OPTIONS_COUNT; i++) {
+                    statusEmojis[i] = STATUS_OPTIONS[i].emoji;
+                    statusLabels[i] = STATUS_OPTIONS[i].label;
+                }
+                g_display.drawStatusMenu(0, statusEmojis, statusLabels, STATUS_OPTIONS_COUNT);
+                g_display.setBrightness(255);
+            }
+            break;
+
         case GYRO_TAP:
-            // 菜单中敲击 → 切换选项（菜单实时刷新）
-            if (g_screenMode == SCREEN_MENU) {
+            // 菜单中敲击 → 切换选项
+            if (g_screenMode == SCREEN_MSG_MENU) {
                 int idx = g_gyro.getMenuIndex();
                 g_display.drawMessageMenu(idx, PRESET_MESSAGES, PRESET_MESSAGES_COUNT);
+            }
+            else if (g_screenMode == SCREEN_STATUS_MENU) {
+                int idx = g_gyro.getMenuIndex();
+                static const char* statusEmojis[STATUS_OPTIONS_COUNT];
+                static const char* statusLabels[STATUS_OPTIONS_COUNT];
+                for (int i = 0; i < STATUS_OPTIONS_COUNT; i++) {
+                    statusEmojis[i] = STATUS_OPTIONS[i].emoji;
+                    statusLabels[i] = STATUS_OPTIONS[i].label;
+                }
+                g_display.drawStatusMenu(idx, statusEmojis, statusLabels, STATUS_OPTIONS_COUNT);
             }
             break;
 
         case GYRO_MENU_TIMEOUT:
-            // 菜单静置超时 → 发送选中消息
-            if (g_screenMode == SCREEN_MENU) {
+            // 消息菜单超时 → 发送消息
+            if (g_screenMode == SCREEN_MSG_MENU) {
                 int idx = g_gyro.getMenuIndex();
                 if (idx >= 0 && idx < PRESET_MESSAGES_COUNT) {
                     String msgId = String(millis(), HEX);
                     g_mqtt.publishMessage(
-                        PRESET_MESSAGES[idx],
-                        msgId.c_str(),
+                        PRESET_MESSAGES[idx], msgId.c_str(),
                         (strcmp(DEVICE_ID, "deviceA") == 0) ? "deviceB" : "deviceA",
-                        time(nullptr)
-                    );
+                        time(nullptr));
                     if (!g_muted) g_audio.playSendTone();
+                }
+                g_screenMode = SCREEN_HOME;
+                g_screenModeEnter = now;
+                updateScreen();
+            }
+            // 状态菜单超时 → 确认发布新状态
+            else if (g_screenMode == SCREEN_STATUS_MENU) {
+                int idx = g_gyro.getMenuIndex();
+                if (idx >= 0 && idx < STATUS_OPTIONS_COUNT) {
+                    g_currentStatus = STATUS_OPTIONS[idx].key;
+                    g_mqtt.publishStatus(g_currentStatus.c_str(), time(nullptr));
+                    if (!g_muted) g_audio.playSendTone();
+                    Serial.printf("[Main] 状态已发布: %s %s\n",
+                                  STATUS_OPTIONS[idx].emoji, STATUS_OPTIONS[idx].label);
                 }
                 g_screenMode = SCREEN_HOME;
                 g_screenModeEnter = now;
