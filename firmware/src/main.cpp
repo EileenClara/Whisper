@@ -104,9 +104,6 @@ String getRelativeTimeStr(unsigned long timestamp);
 // 消息处理回调
 void onMQTTMessage(const char* topic, const JsonDocument& doc);
 
-// 摇动事件处理
-void handleShakeEvent(GyroEvent event);
-
 // 屏幕更新
 void updateScreen();
 
@@ -222,61 +219,89 @@ void loop() {
         g_lastNtpSync = now;
     }
 
-    // ---- 陀螺仪事件处理（非菜单/心跳模式时） ----
-    if (g_screenMode == SCREEN_HOME) {
-        GyroEvent event = g_gyro.update();
-        if (event != GYRO_NONE) {
-            handleShakeEvent(event);
-        }
-    }
+    // ---- 手势事件统一处理 ----
+    GyroEvent gyroEvent = g_gyro.update();
 
-    // ---- 菜单模式处理 ----
-    if (g_screenMode == SCREEN_MENU) {
-        GyroEvent event = g_gyro.update();
-        if (event == GYRO_DOUBLE_SHAKE) {
-            // 菜单超时/确认 → 发送选中的消息
-            int idx = g_gyro.getMenuIndex();
-            if (idx >= 0 && idx < PRESET_MESSAGES_COUNT) {
-                String msgId = String(millis(), HEX);
-                g_mqtt.publishMessage(
-                    PRESET_MESSAGES[idx],
-                    msgId.c_str(),
-                    (strcmp(DEVICE_ID, "deviceA") == 0) ? "deviceB" : "deviceA",
-                    time(nullptr)
-                );
-                g_audio.playSendTone();
+    switch (gyroEvent) {
+
+        case GYRO_SHAKE:
+            // 摇动 → 进入心跳模式
+            if (g_screenMode == SCREEN_HOME) {
+                Serial.println("[Main] 进入心跳模式");
+                g_screenMode = SCREEN_HEARTBEAT;
+                g_screenModeEnter = now;
+                g_display.drawHeartbeatPrompt();
+                g_display.setBrightness(255);
             }
-            g_screenMode = SCREEN_HOME;
-            g_screenModeEnter = now;
-            updateScreen();
-        }
-        // 实时刷新菜单显示
-        static int lastMenuIdx = -1;
-        int curIdx = g_gyro.getMenuIndex();
-        if (curIdx != lastMenuIdx) {
-            lastMenuIdx = curIdx;
-            g_display.drawMessageMenu(curIdx, PRESET_MESSAGES, PRESET_MESSAGES_COUNT);
-        }
-    }
+            break;
 
-    // ---- 心跳模式处理 ----
-    if (g_screenMode == SCREEN_HEARTBEAT) {
-        GyroEvent event = g_gyro.update();
-        if (event == GYRO_SHAKE) {
-            // 确认发送 ❤️
+        case GYRO_HEARTBEAT_SENT:
+            // 心跳模式中确认摇动 → 发送❤️
             g_mqtt.publishHeartbeat(time(nullptr));
             g_audio.playHeartbeatTone();
             Serial.println("[Main] ❤️ 心跳已发送!");
+            g_screenMode = SCREEN_HOME;
+            g_screenModeEnter = now;
+            updateScreen();
+            break;
 
+        case GYRO_HEARTBEAT_CANCEL:
+            // 心跳模式超时 → 取消
             g_screenMode = SCREEN_HOME;
             g_screenModeEnter = now;
             updateScreen();
-        } else if (!g_gyro.isHeartbeatMode()) {
-            // 超时取消
-            g_screenMode = SCREEN_HOME;
-            g_screenModeEnter = now;
-            updateScreen();
-        }
+            break;
+
+        case GYRO_MULTI_TAP:
+            // 敲三下 → 进入快捷消息菜单
+            if (g_screenMode == SCREEN_HOME) {
+                Serial.println("[Main] 敲三下 → 消息菜单");
+                g_screenMode = SCREEN_MENU;
+                g_screenModeEnter = now;
+                g_gyro.resetToIdle();  // 进入菜单模式
+                // 强制陀螺仪进入菜单态
+                g_display.drawMessageMenu(0, PRESET_MESSAGES, PRESET_MESSAGES_COUNT);
+                g_display.setBrightness(255);
+            }
+            break;
+
+        case GYRO_TAP:
+            // 菜单中敲击 → 切换选项（菜单实时刷新）
+            if (g_screenMode == SCREEN_MENU) {
+                int idx = g_gyro.getMenuIndex();
+                g_display.drawMessageMenu(idx, PRESET_MESSAGES, PRESET_MESSAGES_COUNT);
+            }
+            break;
+
+        case GYRO_MENU_TIMEOUT:
+            // 菜单静置超时 → 发送选中消息
+            if (g_screenMode == SCREEN_MENU) {
+                int idx = g_gyro.getMenuIndex();
+                if (idx >= 0 && idx < PRESET_MESSAGES_COUNT) {
+                    String msgId = String(millis(), HEX);
+                    g_mqtt.publishMessage(
+                        PRESET_MESSAGES[idx],
+                        msgId.c_str(),
+                        (strcmp(DEVICE_ID, "deviceA") == 0) ? "deviceB" : "deviceA",
+                        time(nullptr)
+                    );
+                    g_audio.playSendTone();
+                }
+                g_screenMode = SCREEN_HOME;
+                g_screenModeEnter = now;
+                updateScreen();
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    // 心跳模式超时后自动退出（gyro 状态机已处理，这里做 UI 同步）
+    if (g_screenMode == SCREEN_HEARTBEAT && !g_gyro.isHeartbeatMode()) {
+        g_screenMode = SCREEN_HOME;
+        g_screenModeEnter = now;
+        updateScreen();
     }
 
     // ---- ❤️动画播放 ----
@@ -482,29 +507,6 @@ void onMQTTMessage(const char* topic, const JsonDocument& doc) {
         bool online = doc["online"] | false;
         const char* name = doc["device_name"] | "对方";
         Serial.printf("[Main] 📡 %s %s\n", name, online ? "上线了" : "离线了");
-    }
-}
-
-// ============================================================
-// 摇动事件处理
-// ============================================================
-
-void handleShakeEvent(GyroEvent event) {
-    if (event == GYRO_SHAKE) {
-        // 单摇 → 进入心跳模式
-        Serial.println("[Main] 进入心跳模式");
-        g_screenMode = SCREEN_HEARTBEAT;
-        g_screenModeEnter = millis();
-        g_display.drawHeartbeatPrompt();
-        g_display.setBrightness(255);
-    }
-    else if (event == GYRO_DOUBLE_SHAKE) {
-        // 双摇 → 进入快捷消息菜单
-        Serial.println("[Main] 进入快捷消息菜单");
-        g_screenMode = SCREEN_MENU;
-        g_screenModeEnter = millis();
-        g_display.drawMessageMenu(0, PRESET_MESSAGES, PRESET_MESSAGES_COUNT);
-        g_display.setBrightness(255);
     }
 }
 

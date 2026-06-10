@@ -276,7 +276,7 @@ void Display::_drawBottomBar() {
 
     _tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
     _tft.drawString("摇一摇 ❤️", 8, TFT_HEIGHT - 18, 1);
-    _tft.drawString("双摇 消息", TFT_WIDTH - 72, TFT_HEIGHT - 18, 1);
+    _tft.drawString("敲三下 消息", TFT_WIDTH - 78, TFT_HEIGHT - 18, 1);
 }
 
 const char* Display::_getWeatherIcon(const char* iconCode) {

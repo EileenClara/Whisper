@@ -84,12 +84,20 @@ extern "C" {
 #define SCREEN_TIMEOUT_MS       (30 * 1000)  // 30秒无操作后屏幕变暗（不关，调低背光）
 #define SCREEN_DIM_BRIGHTNESS   10           // 暗屏时背光亮度 (0-255)
 
-// ---- 摇动检测阈值 ----
+// ---- 手势检测阈值 ----
+// 摇动检测（发❤️用）
 #define SHAKE_THRESHOLD         1500        // 摇动加速度阈值 (mg)，越低越灵敏
 #define SHAKE_DEBOUNCE_MS       2500        // 摇动冷却时间（防重复触发）
 #define SHAKE_HEARTBEAT_WINDOW  3000        // 心跳模式窗口（摇一下后3秒内再摇=发❤️）
-#define SHAKE_DOUBLE_WINDOW     800         // 双摇检测窗口（ms内两次摇动=进入菜单）
-#define SHAKE_MENU_TIMEOUT      3000        // 菜单模式中静置超时(ms)，自动发送当前选中消息
+
+// 敲击检测（消息菜单用）
+#define TAP_THRESHOLD           2500        // 敲击加速度阈值 (mg)，高于摇动阈值
+#define TAP_COUNT_WINDOW_MS     2000        // 敲击计数窗口（2秒内敲N次=进入菜单）
+#define TAP_DEBOUNCE_MS         200         // 敲击防抖间隔
+#define TAP_REQUIRED_COUNT      3           // 进入菜单需要的连续敲击次数
+
+// 菜单模式
+#define SHAKE_MENU_TIMEOUT      3000        // 菜单中静置超时(ms)，自动发送选中消息
 
 // ---- 预设快捷消息 ----
 #define PRESET_MESSAGES_COUNT   6
