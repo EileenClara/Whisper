@@ -9,9 +9,27 @@
 // 静态实例指针
 MQTTHandler* MQTTHandler::_instance = nullptr;
 
-// ISRG Root X1 根证书（Let's Encrypt 根证书）
-// 这是 Let's Encrypt 签发的证书的信任根
-static const char* ISRG_ROOT_X1 = R"EOF(
+// ============================================================
+// TLS 根证书 — 部署前必须替换！
+// ============================================================
+// 运行 install.sh 后，终端会输出 CA 根证书内容。
+// 将下面的占位符替换为你的自签名 CA 证书：
+//   复制 install.sh 输出的 CA 证书（包括 BEGIN/END 行）
+//
+// 如果使用 Let's Encrypt（有域名），取消注释 ISRG_ROOT_X1 即可
+// ============================================================
+
+// 自签名 CA 证书占位符 — 替换为你的证书！
+static const char* CA_CERT = R"EOF(
+-----BEGIN CERTIFICATE-----
+在此粘贴 install.sh 输出的 CA 证书内容
+（包括 -----BEGIN CERTIFICATE----- 和 -----END CERTIFICATE-----）
+-----END CERTIFICATE-----
+)EOF";
+
+// Let's Encrypt ISRG Root X1（有域名时使用，注释上面 CA_CERT，取消下面注释）
+/*
+static const char* CA_CERT = R"EOF(
 -----BEGIN CERTIFICATE-----
 MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
 TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
@@ -44,6 +62,7 @@ C4uKXoVE0jMGgHfp+PLsQI6lZGRCcY8wLQXoLxjGzthRq+jNnZ1/JFLsYmIFRnEl
 1+GM2szBllMTHNGHNJbI1qpcP/+Fiyz+8tQ6oD+Kb2+4F2PJQ==
 -----END CERTIFICATE-----
 )EOF";
+*/
 
 MQTTHandler::MQTTHandler() {
     _instance = this;
@@ -63,8 +82,8 @@ bool MQTTHandler::begin(const char* brokerHost, uint16_t brokerPort,
     _password = password;
     _deviceId = deviceId;
 
-    // 设置 TLS 证书
-    _wifiClient.setCACert(ISRG_ROOT_X1);
+    // 设置 TLS 证书（自签名用 CA_CERT，Let's Encrypt 用 ISRG_ROOT_X1）
+    _wifiClient.setCACert(CA_CERT);
 
     // 设置 MQTT 客户端
     _mqtt.setClient(_wifiClient);

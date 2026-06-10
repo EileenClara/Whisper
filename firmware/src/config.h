@@ -38,10 +38,10 @@ extern "C" {
 
 // ---- MQTT Broker 地址 ----
 // 替换为你的 VPS 域名或 IP
-#define MQTT_BROKER_HOST        "YOUR_VPS_DOMAIN_OR_IP"
+#define MQTT_BROKER_HOST        "198.13.56.214"
 #define MQTT_BROKER_PORT        8883        // TLS 端口
 #define MQTT_USERNAME           "lovebeacon"  // 与 mosquitto.conf 对应
-#define MQTT_PASSWORD           "YOUR_MQTT_PASSWORD"
+#define MQTT_PASSWORD           "Tyg.2005315"
 
 // ---- MQTT Topic 基础前缀 ----
 #define MQTT_TOPIC_PREFIX       "lovebeacon"
@@ -53,22 +53,22 @@ extern "C" {
 
 // ---- 设备个人信息 ----
 #if DEVICE_ID == "deviceA"
-    #define MY_NAME             "你的名字"
-    #define PARTNER_NAME        "对方的名字"
-    #define MY_CITY             "Shanghai"
-    #define MY_CITY_ID          "Shanghai,CN"
+    #define MY_NAME             "果果"
+    #define PARTNER_NAME        "vv"
+    #define MY_CITY             "Beijing"
+    #define MY_CITY_ID          "Beijing,CN"
     #define MY_TZ_STRING        "CST-8"         // 中国标准时间 UTC+8
     #define PARTNER_CITY        "Singapore"
     #define PARTNER_CITY_ID     "Singapore,SG"
     #define PARTNER_TZ_STRING   "<+08>-8"       // 新加坡 UTC+8
 #else  // deviceB
-    #define MY_NAME             "对方的名字"
-    #define PARTNER_NAME        "你的名字"
+    #define MY_NAME             "vv"
+    #define PARTNER_NAME        "果果"
     #define MY_CITY             "Singapore"
     #define MY_CITY_ID          "Singapore,SG"
     #define MY_TZ_STRING        "<+08>-8"       // 新加坡 UTC+8
-    #define PARTNER_CITY        "Shanghai"
-    #define PARTNER_CITY_ID     "Shanghai,CN"
+    #define PARTNER_CITY        "Beijing"
+    #define PARTNER_CITY_ID     "Beijing,CN"
     #define PARTNER_TZ_STRING   "CST-8"         // 中国标准时间 UTC+8
 #endif
 

@@ -12,7 +12,7 @@
         "broker_port": 1883,
         "tls_port": 8883,
         "username": "lovebeacon",
-        "password": "YOUR_MQTT_PASSWORD_HERE",
+        "password": "Tyg.2005315",
         "keepalive": 60,
         "client_id": "lovebeacon_server"
     },
@@ -22,7 +22,7 @@
             "name": "果果",
             "partner_name": "vv",
             "city": "Beijing",
-            "timezone": "Asia/Beijing",
+            "timezone": "Asia/Shanghai",
             "weather_city_id": "Beijing,CN"
         },
         "deviceB": {
@@ -42,8 +42,13 @@
     },
 
     "tls": {
-        "cert_file": "/etc/letsencrypt/live/YOUR_DOMAIN/fullchain.pem",
-        "key_file": "/etc/letsencrypt/live/YOUR_DOMAIN/privkey.pem",
-        "ca_file": "/etc/ssl/certs/ISRG_Root_X1.pem"
+        "//": "方式一：自签名（无域名用这个）",
+        "cert_file": "/etc/mosquitto/certs/server.crt",
+        "key_file": "/etc/mosquitto/certs/server.key",
+        "ca_file": "/etc/mosquitto/certs/ca.crt",
+        "//_alt": "方式二：Let's Encrypt（有域名用这个）",
+        "_cert_file_alt": "/etc/letsencrypt/live/YOUR_DOMAIN/fullchain.pem",
+        "_key_file_alt": "/etc/letsencrypt/live/YOUR_DOMAIN/privkey.pem",
+        "_ca_file_alt": "/etc/ssl/certs/ISRG_Root_X1.pem"
     }
 }

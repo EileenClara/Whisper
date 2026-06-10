@@ -20,10 +20,12 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # ---- 配置变量（请根据实际情况修改）----
-DOMAIN="YOUR_DOMAIN"                # 你的域名（如 lovebeacon.example.com）
-EMAIL="YOUR_EMAIL@example.com"      # 你的邮箱（用于 Let's Encrypt 通知）
+USE_SELF_SIGNED=true                # true=自签名(无域名) / false=Let's Encrypt(有域名)
+SERVER_IP="198.13.56.214"           # VPS IP（自签名时需要）
+DOMAIN="YOUR_DOMAIN"                # 你的域名（Let's Encrypt 时需要）
+EMAIL="YOUR_EMAIL@example.com"      # 你的邮箱（Let's Encrypt 时需要）
 MQTT_USER="lovebeacon"
-MQTT_PASS="YOUR_MQTT_PASSWORD"      # MQTT密码（请修改为强密码）
+MQTT_PASS="Tyg.2005315"             # MQTT密码（与固件 config.h 一致）
 
 echo "[1/7] 更新系统包..."
 apt update && apt upgrade -y
@@ -70,19 +72,61 @@ cp mosquitto.conf /etc/mosquitto/conf.d/lovebeacon.conf
 # 替换配置中的域名占位符
 sed -i "s/YOUR_DOMAIN/$DOMAIN/g" /etc/mosquitto/conf.d/lovebeacon.conf
 
-echo "[5/7] 配置 TLS 证书（Let's Encrypt）..."
-if [ "$DOMAIN" != "YOUR_DOMAIN" ]; then
-    certbot certonly --standalone \
-        -d "$DOMAIN" \
-        --email "$EMAIL" \
-        --agree-tos \
-        --non-interactive
-    echo "证书已获取。将设置自动续期..."
-    # certbot 自动续期 timer
-    systemctl enable certbot.timer
+echo "[5/7] 配置 TLS 证书..."
+
+if [ "$USE_SELF_SIGNED" = true ]; then
+    echo "使用自签名证书（无域名模式）..."
+
+    # 创建证书目录
+    mkdir -p /etc/mosquitto/certs
+
+    # 生成 CA 私钥和根证书（10年有效期）
+    openssl genrsa -out /etc/mosquitto/certs/ca.key 2048
+    openssl req -new -x509 -days 3650 -key /etc/mosquitto/certs/ca.key \
+        -out /etc/mosquitto/certs/ca.crt \
+        -subj "/C=JP/O=Whisper/CN=Whisper-Root-CA"
+
+    # 生成服务器私钥和证书签名请求
+    openssl genrsa -out /etc/mosquitto/certs/server.key 2048
+    openssl req -new -key /etc/mosquitto/certs/server.key \
+        -out /etc/mosquitto/certs/server.csr \
+        -subj "/C=JP/O=Whisper/CN=${SERVER_IP}"
+
+    # 用 CA 签发服务器证书（包含 IP SAN 扩展）
+    cat > /tmp/openssl-san.cnf <<EOF
+[req]
+distinguished_name = req_distinguished_name
+[req_distinguished_name]
+[v3_req]
+subjectAltName = IP:${SERVER_IP}
+EOF
+    openssl x509 -req -days 3650 -in /etc/mosquitto/certs/server.csr \
+        -CA /etc/mosquitto/certs/ca.crt -CAkey /etc/mosquitto/certs/ca.key \
+        -CAcreateserial -out /etc/mosquitto/certs/server.crt \
+        -extensions v3_req -extfile /tmp/openssl-san.cnf
+
+    rm -f /etc/mosquitto/certs/server.csr /tmp/openssl-san.cnf
+
+    echo "✅ 自签名证书已生成"
+    echo ""
+    echo "⚠️  重要：将下面 CA 证书内容复制到固件 firmware/src/mqtt_handler.cpp 中"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    cat /etc/mosquitto/certs/ca.crt
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
 else
-    echo "⚠️  未配置域名，跳过 Let's Encrypt。"
-    echo "   请稍后手动运行: sudo certbot certonly --standalone -d your-domain.com"
+    echo "使用 Let's Encrypt 证书..."
+    if [ "$DOMAIN" != "YOUR_DOMAIN" ]; then
+        certbot certonly --standalone \
+            -d "$DOMAIN" \
+            --email "$EMAIL" \
+            --agree-tos \
+            --non-interactive
+        echo "证书已获取。将设置自动续期..."
+        systemctl enable certbot.timer
+    else
+        echo "⚠️  未配置域名，跳过。"
+    fi
 fi
 
 echo "[6/7] 安装 Python 依赖..."
