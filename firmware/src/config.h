@@ -86,26 +86,14 @@
 #define SHAKE_DEBOUNCE_MS       2500        // 摇动冷却时间（防重复触发）
 #define SHAKE_HEARTBEAT_WINDOW  3000        // 心跳模式窗口（摇一下后3秒内再摇=发❤️）
 
-// 敲击检测（消息菜单用：敲3下；状态菜单用：敲4下）
-#define TAP_THRESHOLD           2500        // 敲击加速度阈值 (mg)，高于摇动阈值
+// 敲击检测（敲4下=状态菜单）
+#define TAP_THRESHOLD           2500        // 敲击加速度阈值 (mg)
 #define TAP_COUNT_WINDOW_MS     2000        // 敲击计数窗口（2秒内）
 #define TAP_DEBOUNCE_MS         200         // 敲击防抖间隔
-#define TAP_MSG_COUNT           3           // 敲几下=消息菜单
 #define TAP_STATUS_COUNT        4           // 敲几下=状态菜单
 
 // 菜单模式
 #define SHAKE_MENU_TIMEOUT      3000        // 菜单中静置超时(ms)，自动发送选中消息
-
-// ---- 预设快捷消息 ----
-#define PRESET_MESSAGES_COUNT   6
-static const char* PRESET_MESSAGES[] = {
-    "想你了💕",
-    "晚安🌙",
-    "早安☀️",
-    "在忙",
-    "等我一下",
-    "我爱你❤️",
-};
 
 // ---- 状态选项 ----
 #define STATUS_OPTIONS_COUNT    6

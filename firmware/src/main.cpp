@@ -48,9 +48,9 @@ Audio g_audio;
 static String g_partnerStatus = "";
 static String g_partnerStatusEmoji = "";
 
-// 最新收到的消息
-static String g_lastMessage = "";
-static unsigned long g_lastMessageTime = 0;
+// 心跳时间追踪
+static unsigned long g_lastHeartbeatSent = 0;
+static unsigned long g_lastHeartbeatReceived = 0;
 
 // 天气数据
 static float g_localTemp = 0;
@@ -77,7 +77,6 @@ static unsigned long g_lastStatusPublish = 0;
 enum ScreenMode {
     SCREEN_HOME,
     SCREEN_HEARTBEAT,
-    SCREEN_MSG_MENU,        // 快捷消息菜单
     SCREEN_STATUS_MENU,     // 状态选择菜单
     SCREEN_HEART_ANIM,
     SCREEN_CONNECTING,
@@ -85,10 +84,8 @@ enum ScreenMode {
 static ScreenMode g_screenMode = SCREEN_CONNECTING;
 static unsigned long g_screenModeEnter = 0;
 
-// 消息接收标记（用于触发UI更新）
-static bool g_newMessageReceived = false;
+// 接收标记
 static bool g_newHeartbeatReceived = false;
-static int g_newHeartbeatCount = 0;
 
 // ============================================================
 // 函数声明
@@ -243,8 +240,8 @@ void loop() {
         case GYRO_HEARTBEAT_SENT:
             // 心跳模式中确认摇动 → 发送❤️
             g_mqtt.publishHeartbeat(time(nullptr));
+            g_lastHeartbeatSent = time(nullptr);
             if (!g_muted) g_audio.playHeartbeatTone();
-            Serial.println("[Main] ❤️ 心跳已发送!");
             g_screenMode = SCREEN_HOME;
             g_screenModeEnter = now;
             updateScreen();
@@ -255,18 +252,6 @@ void loop() {
             g_screenMode = SCREEN_HOME;
             g_screenModeEnter = now;
             updateScreen();
-            break;
-
-        case GYRO_TAP_3:
-            // 敲三下 → 消息菜单
-            if (g_screenMode == SCREEN_HOME) {
-                Serial.println("[Main] 敲三下 → 消息菜单");
-                g_gyro.enterMsgMenu();
-                g_screenMode = SCREEN_MSG_MENU;
-                g_screenModeEnter = now;
-                g_display.drawMessageMenu(0, PRESET_MESSAGES, PRESET_MESSAGES_COUNT);
-                g_display.setBrightness(255);
-            }
             break;
 
         case GYRO_TAP_4:
@@ -290,48 +275,25 @@ void loop() {
             break;
 
         case GYRO_TAP:
-            // 菜单中敲击 → 切换选项
-            if (g_screenMode == SCREEN_MSG_MENU) {
+            if (g_screenMode == SCREEN_STATUS_MENU) {
                 int idx = g_gyro.getMenuIndex();
-                g_display.drawMessageMenu(idx, PRESET_MESSAGES, PRESET_MESSAGES_COUNT);
-            }
-            else if (g_screenMode == SCREEN_STATUS_MENU) {
-                int idx = g_gyro.getMenuIndex();
-                static const char* statusEmojis[STATUS_OPTIONS_COUNT];
-                static const char* statusLabels[STATUS_OPTIONS_COUNT];
+                static const char* es[STATUS_OPTIONS_COUNT];
+                static const char* ls[STATUS_OPTIONS_COUNT];
                 for (int i = 0; i < STATUS_OPTIONS_COUNT; i++) {
-                    statusEmojis[i] = STATUS_OPTIONS[i].emoji;
-                    statusLabels[i] = STATUS_OPTIONS[i].label;
+                    es[i] = STATUS_OPTIONS[i].emoji;
+                    ls[i] = STATUS_OPTIONS[i].label;
                 }
-                g_display.drawStatusMenu(idx, statusEmojis, statusLabels, STATUS_OPTIONS_COUNT);
+                g_display.drawStatusMenu(idx, es, ls, STATUS_OPTIONS_COUNT);
             }
             break;
 
-        case GYRO_MENU_TIMEOUT:
-            // 消息菜单超时 → 发送消息
-            if (g_screenMode == SCREEN_MSG_MENU) {
-                int idx = g_gyro.getMenuIndex();
-                if (idx >= 0 && idx < PRESET_MESSAGES_COUNT) {
-                    String msgId = String(millis(), HEX);
-                    g_mqtt.publishMessage(
-                        PRESET_MESSAGES[idx], msgId.c_str(),
-                        (strcmp(DEVICE_ID, "deviceA") == 0) ? "deviceB" : "deviceA",
-                        time(nullptr));
-                    if (!g_muted) g_audio.playSendTone();
-                }
-                g_screenMode = SCREEN_HOME;
-                g_screenModeEnter = now;
-                updateScreen();
-            }
-            // 状态菜单超时 → 确认发布新状态
-            else if (g_screenMode == SCREEN_STATUS_MENU) {
+        case GYRO_STATUS_CONFIRM:
+            if (g_screenMode == SCREEN_STATUS_MENU) {
                 int idx = g_gyro.getMenuIndex();
                 if (idx >= 0 && idx < STATUS_OPTIONS_COUNT) {
                     g_currentStatus = STATUS_OPTIONS[idx].key;
                     g_mqtt.publishStatus(g_currentStatus.c_str(), time(nullptr));
                     if (!g_muted) g_audio.playSendTone();
-                    Serial.printf("[Main] 状态已发布: %s %s\n",
-                                  STATUS_OPTIONS[idx].emoji, STATUS_OPTIONS[idx].label);
                 }
                 g_screenMode = SCREEN_HOME;
                 g_screenModeEnter = now;
@@ -366,18 +328,10 @@ void loop() {
         }
     }
 
-    // ---- 新消息处理 ----
-    if (g_newMessageReceived) {
-        g_newMessageReceived = false;
-        if (!g_muted) g_audio.playMessageTone();
-        g_display.setBrightness(255);  // 亮屏
-        g_screenMode = SCREEN_HOME;
-        updateScreen();
-    }
-
-    // ---- 新心跳处理 ----
+    // ---- 新心跳 ----
     if (g_newHeartbeatReceived) {
         g_newHeartbeatReceived = false;
+        g_lastHeartbeatReceived = time(nullptr);
         if (!g_muted) g_audio.playHeartbeatTone();
         g_display.setBrightness(255);
         g_screenMode = SCREEN_HEART_ANIM;
@@ -522,24 +476,10 @@ void onMQTTMessage(const char* topic, const JsonDocument& doc) {
     String topicStr = String(topic);
     Serial.printf("[Main] 处理消息: %s\n", topic);
 
-    // ---- 收到消息 ----
-    if (topicStr.endsWith("/message/receive")) {
-        const char* content = doc["content"] | "";
-        const char* fromName = doc["from_name"] | "对方";
-        unsigned long ts = doc["timestamp"] | 0;
-
-        g_lastMessage = String(fromName) + ": " + String(content);
-        g_lastMessageTime = ts;
-        g_newMessageReceived = true;
-
-        Serial.printf("[Main] 📩 新消息: %s\n", g_lastMessage.c_str());
-    }
-
     // ---- 收到心跳 ----
-    else if (topicStr.endsWith("/heartbeat/notify")) {
+    if (topicStr.endsWith("/heartbeat/notify")) {
         g_newHeartbeatReceived = true;
-        g_newHeartbeatCount++;
-        Serial.printf("[Main] ❤️ 收到心跳! (总计 %d)\n", g_newHeartbeatCount);
+        Serial.println("[Main] ❤️ 收到心跳!");
     }
 
     // ---- 收到状态更新 ----
@@ -589,26 +529,34 @@ void updateScreen() {
 
     String localTime = getLocalTimeStr();
     String localDate = getLocalDateStr();
-    String msgPreview = g_lastMessage;
-    String msgTime = "";
-    if (g_lastMessageTime > 0) {
-        msgTime = getRelativeTimeStr(g_lastMessageTime);
+
+    // 查找当前状态的 emoji 和 label
+    const char* myEmoji = "💕";
+    const char* myLabel = "想你";
+    for (int i = 0; i < STATUS_OPTIONS_COUNT; i++) {
+        if (strcmp(STATUS_OPTIONS[i].key, g_currentStatus.c_str()) == 0) {
+            myEmoji = STATUS_OPTIONS[i].emoji;
+            myLabel = STATUS_OPTIONS[i].label;
+            break;
+        }
+    }
+
+    // 最后心跳相对时间
+    String hbTime = "";
+    if (g_lastHeartbeatSent > 0) {
+        hbTime = getRelativeTimeStr(g_lastHeartbeatSent);
     }
 
     g_display.drawHomeScreen(
         localTime.c_str(),
         localDate.c_str(),
-        MY_CITY,
-        g_localTemp,
-        g_localWeatherIcon.c_str(),
-        PARTNER_CITY,
-        g_partnerTemp,
-        g_partnerWeatherIcon.c_str(),
+        MY_CITY, g_localTemp, g_localWeatherIcon.c_str(),
+        PARTNER_CITY, g_partnerTemp, g_partnerWeatherIcon.c_str(),
+        myEmoji, myLabel,
         g_partnerStatus.c_str(),
-        msgPreview.c_str(),
-        msgTime.c_str(),
+        hbTime.c_str(),
         g_wifi.getRSSI(),
-        false,  // TODO: 读取充电状态
+        false,
         g_muted
     );
 

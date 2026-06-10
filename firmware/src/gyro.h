@@ -23,22 +23,20 @@
 /** 手势事件类型 */
 enum GyroEvent {
     GYRO_NONE = 0,          // 无事件
-    GYRO_SHAKE,             // 检测到摇动 → 进入/确认心跳
-    GYRO_TAP,               // 检测到敲击 → 菜单中切换选项
-    GYRO_TAP_3,             // 连续3次敲击 → 进入消息菜单
-    GYRO_TAP_4,             // 连续4次敲击 → 进入状态菜单
-    GYRO_HEARTBEAT_SENT,    // 心跳模式中确认摇动 → 发送❤️
-    GYRO_MENU_TIMEOUT,      // 菜单中静置超时 → 发送/确认
-    GYRO_HEARTBEAT_CANCEL,  // 心跳模式超时 → 取消
+    GYRO_SHAKE,             // 摇动 → 进入/确认心跳
+    GYRO_TAP,               // 敲击 → 状态菜单中切换
+    GYRO_TAP_4,             // 敲4下 → 打开状态菜单
+    GYRO_HEARTBEAT_SENT,    // 心跳确认 → 发❤️
+    GYRO_STATUS_CONFIRM,    // 状态菜单超时 → 确认新状态
+    GYRO_HEARTBEAT_CANCEL,  // 心跳超时 → 取消
 };
 
 /** 手势检测状态机 */
 enum GestureState {
     STATE_IDLE = 0,           // 空闲
-    STATE_TAP_COUNTING,       // 连续敲击计数（2秒窗口）
+    STATE_TAP_COUNTING,       // 敲击计数（2秒窗口）
     STATE_HEARTBEAT_MODE,     // 心跳模式
-    STATE_MSG_MENU,           // 快捷消息菜单
-    STATE_STATUS_MENU,        // 状态选择菜单
+    STATE_STATUS_MENU,        // 状态菜单
     STATE_COOLDOWN,           // 冷却中
 };
 
@@ -62,21 +60,9 @@ public:
     bool isHeartbeatMode();
 
     /** 是否在消息菜单模式 */
-    bool isMsgMenu();
-
-    /** 是否在状态菜单模式 */
     bool isStatusMenu();
-
-    /** 获取当前选中索引（消息菜单或状态菜单通用） */
-    int getMenuIndex();
-
-    /** 进入消息菜单模式 */
-    void enterMsgMenu();
-
-    /** 进入状态菜单模式 */
+    int  getMenuIndex();
     void enterStatusMenu();
-
-    /** 重置到空闲 */
     void resetToIdle();
 
     /** 获取步数 */

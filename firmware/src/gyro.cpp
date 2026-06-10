@@ -108,9 +108,7 @@ GyroEvent Gyro::update() {
         // ---- 敲击计数态：2秒窗口内等待更多敲击 ----
         case STATE_TAP_COUNTING:
             if (now - _stateEnterTime > TAP_COUNT_WINDOW_MS) {
-                // 窗口超时：按最终计数触发
                 if (_tapCount >= TAP_STATUS_COUNT)       event = GYRO_TAP_4;
-                else if (_tapCount >= TAP_MSG_COUNT)     event = GYRO_TAP_3;
                 else Serial.printf("[Gyro] 敲击 %d 次（不足）→ 忽略\n", _tapCount);
                 _state = STATE_COOLDOWN;
                 _stateEnterTime = now;
@@ -129,8 +127,6 @@ GyroEvent Gyro::update() {
                 _lastTapTime = now;
                 Serial.printf("[Gyro] 敲击 #%d (剩余%lums)\n",
                               _tapCount, TAP_COUNT_WINDOW_MS - (now - _stateEnterTime));
-
-                // 达到4次 → 立即触发状态菜单
                 if (_tapCount >= TAP_STATUS_COUNT) {
                     event = GYRO_TAP_4;
                     Serial.println("[Gyro] 敲4下 → 状态菜单");
@@ -138,26 +134,17 @@ GyroEvent Gyro::update() {
                     _stateEnterTime = now;
                     _tapCount = 0;
                 }
-                // 达到3次 → 立即触发消息菜单
-                else if (_tapCount == TAP_MSG_COUNT) {
-                    event = GYRO_TAP_3;
-                    Serial.println("[Gyro] 敲3下 → 消息菜单");
-                    // 不退出计数态，可能还有第4下
-                }
             }
             break;
 
-        // ---- 心跳模式：等待确认摇动 ----
+        // ---- 心跳模式 ----
         case STATE_HEARTBEAT_MODE:
             if (now - _stateEnterTime > SHAKE_HEARTBEAT_WINDOW) {
-                // 超时 → 取消心跳
                 _state = STATE_COOLDOWN;
                 _stateEnterTime = now;
                 event = GYRO_HEARTBEAT_CANCEL;
-                Serial.println("[Gyro] 心跳模式超时 → 取消");
             }
             else if (isShake && now - _lastShakeTime > 500) {
-                // 再次摇动 → 确认发送❤️
                 _state = STATE_COOLDOWN;
                 _stateEnterTime = now;
                 event = GYRO_HEARTBEAT_SENT;
@@ -165,40 +152,16 @@ GyroEvent Gyro::update() {
             }
             break;
 
-        // ---- 消息菜单：敲击切换，静置发送 ----
-        case STATE_MSG_MENU:
-            if (isTap && now - _lastTapTime > TAP_DEBOUNCE_MS) {
-                _menuIndex = (_menuIndex + 1) % PRESET_MESSAGES_COUNT;
-                _lastTapTime = now;
-                event = GYRO_TAP;
-                Serial.printf("[Gyro] 消息切换 → [%d] %s\n", _menuIndex, PRESET_MESSAGES[_menuIndex]);
-            }
-            else if (now - _lastMovementTime > SHAKE_MENU_TIMEOUT) {
-                event = GYRO_MENU_TIMEOUT;
-                Serial.printf("[Gyro] 消息菜单超时 → 发送: %s\n", PRESET_MESSAGES[_menuIndex]);
-                _state = STATE_COOLDOWN;
-                _stateEnterTime = now;
-            }
-            else if (isShake && now - _lastShakeTime > 500) {
-                _menuIndex = (_menuIndex + 1) % PRESET_MESSAGES_COUNT;
-                _lastShakeTime = now;
-                event = GYRO_TAP;
-            }
-            break;
-
-        // ---- 状态菜单：敲击切换状态，静置确认 ----
+        // ---- 状态菜单：敲击切换，静置确认 ----
         case STATE_STATUS_MENU:
             if (isTap && now - _lastTapTime > TAP_DEBOUNCE_MS) {
                 _menuIndex = (_menuIndex + 1) % STATUS_OPTIONS_COUNT;
                 _lastTapTime = now;
                 event = GYRO_TAP;
-                Serial.printf("[Gyro] 状态切换 → [%d] %s%s\n",
-                              _menuIndex, STATUS_OPTIONS[_menuIndex].emoji,
-                              STATUS_OPTIONS[_menuIndex].label);
             }
             else if (now - _lastMovementTime > SHAKE_MENU_TIMEOUT) {
-                event = GYRO_MENU_TIMEOUT;
-                Serial.printf("[Gyro] 状态菜单超时 → 确认: %s\n", STATUS_OPTIONS[_menuIndex].label);
+                event = GYRO_STATUS_CONFIRM;
+                Serial.printf("[Gyro] 状态确认: %s\n", STATUS_OPTIONS[_menuIndex].label);
                 _state = STATE_COOLDOWN;
                 _stateEnterTime = now;
             }
@@ -236,18 +199,8 @@ void Gyro::getAccel(float& x, float& y, float& z) {
 }
 
 bool Gyro::isHeartbeatMode() { return _state == STATE_HEARTBEAT_MODE; }
-bool Gyro::isMsgMenu()    { return _state == STATE_MSG_MENU; }
-bool Gyro::isStatusMenu() { return _state == STATE_STATUS_MENU; }
-
-int Gyro::getMenuIndex()  { return _menuIndex; }
-
-void Gyro::enterMsgMenu() {
-    _state = STATE_MSG_MENU;
-    _stateEnterTime = millis();
-    _menuIndex = 0;
-    _tapCount = 0;
-    _lastMovementTime = millis();
-}
+bool Gyro::isStatusMenu()    { return _state == STATE_STATUS_MENU; }
+int  Gyro::getMenuIndex()    { return _menuIndex; }
 
 void Gyro::enterStatusMenu() {
     _state = STATE_STATUS_MENU;

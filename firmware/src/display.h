@@ -1,21 +1,24 @@
 /**
  * @file display.h
- * @brief Whisper TFT 屏幕驱动 + UI 绘制 (ST7789 172x320)
+ * @brief Whisper TFT ST7789 172×320 — 主屏 + 状态菜单 + 动画
  *
- * UI 布局（单时钟版）:
+ * 主屏布局:
  *  ┌──────────────────────────┐
- *  │  🔊        📶░░░  🔋     │ ← 状态栏（静音/WiFi/电量）
+ *  │  🔇          📶░░░  🔋   │  状态栏
  *  │                          │
- *  │        14:30             │ ← 单行大字时钟
+ *  │        14:30             │  大字时钟
  *  │     6月10日 周三          │
  *  │                          │
- *  │  北京 🌤 32°  新加坡 🌤 28°│ ← 双城天气
+ *  │  北京 🌤 32°  新加坡 🌤 28°│  双城天气
  *  │                          │
- *  │  💕 vv 正在想你          │ ← 对方状态
+ *  │  ┌─────────┐ ┌─────────┐ │
+ *  │  │💕 想你  │ │📚 学习中 │ │  我的状态 | 对方状态
+ *  │  └─────────┘ └─────────┘ │
+ *  │                          │
+ *  │        💕                 │  上次心跳
+ *  │       刚刚                │
  *  │──────────────────────────│
- *  │  💬 想你了💕  2分钟前     │ ← 最新消息
- *  │──────────────────────────│
- *  │  摇一摇 ❤️   敲三下 消息  │ ← 操作提示
+ *  │  摇一摇 ❤️    敲四下 状态  │  操作提示
  *  └──────────────────────────┘
  */
 
@@ -27,12 +30,10 @@
 
 class Display {
 public:
-    Display();
-    ~Display();
-
+    Display(); ~Display();
     bool begin();
 
-    /** 绘制主屏幕（单时钟 + 双城天气） */
+    /** 主屏幕：双状态并排 + 天气 + 时钟 */
     void drawHomeScreen(
         const char* localTime,      // "14:30"
         const char* localDate,      // "6月10日 周三"
@@ -42,47 +43,31 @@ public:
         const char* partnerCity,    // "新加坡"
         float partnerTemp,          // 28
         const char* partnerIcon,    // "01d"
-        const char* partnerStatus,  // "💕 想你"
-        const char* lastMsg,        // 最新消息
-        const char* lastMsgTime,    // 消息时间
-        int rssi,                   // WiFi信号
-        bool charging,              // 充电中？
-        bool muted                  // 静音？
+        const char* myStatusEmoji,  // "💕"
+        const char* myStatusLabel,  // "想你"
+        const char* partnerStatus,  // "📚 学习中"
+        const char* lastHeartbeat,  // "刚刚" / "3分钟前" / ""
+        int rssi, bool charging, bool muted
     );
 
-    /** 心跳模式提示 */
     void drawHeartbeatPrompt();
-
-    /** ❤️ 动画 */
     void drawHeartAnimation();
-
-    /** 快捷消息菜单 */
-    void drawMessageMenu(int selectedIndex, const char* messages[], int count);
 
     /** 状态选择菜单 */
     void drawStatusMenu(int selectedIndex, const char* emojis[], const char* labels[], int count);
 
-    /** 配网提示 */
     void drawWiFiSetupPrompt(const char* apName, const char* ip);
-
-    /** 连接状态 */
     void drawConnectingScreen(const char* status);
-
-    /** 背光亮度 (0-255) */
-    void setBrightness(uint8_t brightness);
-
+    void setBrightness(uint8_t b);
     void clear();
-
     TFT_eSPI& getTFT();
 
 private:
     TFT_eSPI _tft;
     uint8_t _brightness = 255;
-
     void _drawStatusBar(int rssi, bool charging, bool muted);
     void _drawBottomBar();
     const char* _getWeatherIcon(const char* iconCode);
-    void _drawWeatherCity(int y, const char* city, float temp, const char* iconCode);
 };
 
 #endif
