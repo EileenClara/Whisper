@@ -1,0 +1,49 @@
+{
+    "//": "===== LoveBeacon 服务端配置 =====",
+
+    "server": {
+        "host": "0.0.0.0",
+        "port": 8000,
+        "log_level": "INFO"
+    },
+
+    "mqtt": {
+        "broker_host": "localhost",
+        "broker_port": 1883,
+        "tls_port": 8883,
+        "username": "lovebeacon",
+        "password": "YOUR_MQTT_PASSWORD_HERE",
+        "keepalive": 60,
+        "client_id": "lovebeacon_server"
+    },
+
+    "devices": {
+        "deviceA": {
+            "name": "果果",
+            "partner_name": "vv",
+            "city": "Beijing",
+            "timezone": "Asia/Beijing",
+            "weather_city_id": "Beijing,CN"
+        },
+        "deviceB": {
+            "name": "vv",
+            "partner_name": "果果",
+            "city": "Singapore",
+            "timezone": "Asia/Singapore",
+            "weather_city_id": "Singapore,SG"
+        }
+    },
+
+    "weather": {
+        "api_key": "271834fb90974033d0a897a008687d88",
+        "update_interval_minutes": 30,
+        "units": "metric",
+        "lang": "zh_cn"
+    },
+
+    "tls": {
+        "cert_file": "/etc/letsencrypt/live/YOUR_DOMAIN/fullchain.pem",
+        "key_file": "/etc/letsencrypt/live/YOUR_DOMAIN/privkey.pem",
+        "ca_file": "/etc/ssl/certs/ISRG_Root_X1.pem"
+    }
+}

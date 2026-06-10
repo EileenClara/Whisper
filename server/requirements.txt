@@ -1,0 +1,25 @@
+# LoveBeacon 服务端依赖
+# Python 3.10+
+
+# Web框架
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+
+# MQTT客户端（异步）
+gmqtt>=0.6.12
+
+# 异步数据库
+aiosqlite>=0.19.0
+
+# HTTP请求（天气API）
+httpx>=0.26.0
+
+# JWT认证（可选，预留）
+pyjwt>=2.8.0
+
+# 密码哈希
+bcrypt>=4.1.0
+
+# 配置管理
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
