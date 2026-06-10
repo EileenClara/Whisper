@@ -364,26 +364,28 @@ void loop() {
         }
     }
 
-    // ---- 静音切换：屏幕朝下保持3秒 ----
+    // ---- 静音切换：屏幕朝下保持3秒（翻回朝上后才允许再次切换） ----
     float ax, ay, az;
     g_gyro.getAccel(ax, ay, az);
-    // 当Z轴加速度接近 -1000mg（屏幕朝下，重力在-Z方向）
-    if (az < -800 && g_screenMode == SCREEN_HOME) {
+    static bool g_muteLocked = false;  // 切换后锁定，翻回来才解锁
+
+    if (az < -800 && g_screenMode == SCREEN_HOME && !g_muteLocked) {
         if (g_faceDownStart == 0) {
             g_faceDownStart = now;
         } else if (now - g_faceDownStart > 3000) {
-            // 3秒到了，切换静音
             g_muted = !g_muted;
+            g_muteLocked = true;         // 锁定，防止一直扣着反复切
             g_faceDownStart = 0;
             Serial.printf("[Main] 🔇 静音: %s\n", g_muted ? "开" : "关");
             updateScreen();
-            // 给个短暂震动反馈... 不，没有震动马达。闪一下背光提示。
             g_display.setBrightness(255);
             delay(100);
-            g_display.setBrightness(g_muted ? SCREEN_DIM_BRIGHTNESS : 255);
+            g_display.setBrightness(SCREEN_DIM_BRIGHTNESS);
         }
-    } else {
-        g_faceDownStart = 0;  // 设备不是朝下的，重置计时
+    } else if (az > -200) {
+        // 设备翻回来了 → 解锁，允许下次切换
+        g_faceDownStart = 0;
+        g_muteLocked = false;
     }
 
     delay(50);
