@@ -62,6 +62,10 @@ static unsigned long g_lastWeatherUpdate = 0;
 // 当前本地状态
 static String g_currentStatus = "love";  // 默认 "想你"
 
+// 静音状态
+static bool g_muted = false;
+static unsigned long g_faceDownStart = 0;  // 屏幕朝下开始时间
+
 // 系统状态
 static bool g_wifiConnected = false;
 static bool g_mqttConnected = false;
@@ -133,7 +137,7 @@ void setup() {
 
     // 3. 音频初始化
     g_audio.begin();
-    g_audio.playBootTone();
+    if (!g_muted) g_audio.playBootTone();
 
     // 4. 陀螺仪初始化
     if (!g_gyro.begin(LSM6DS3_I2C_ADDR)) {
@@ -238,7 +242,7 @@ void loop() {
         case GYRO_HEARTBEAT_SENT:
             // 心跳模式中确认摇动 → 发送❤️
             g_mqtt.publishHeartbeat(time(nullptr));
-            g_audio.playHeartbeatTone();
+            if (!g_muted) g_audio.playHeartbeatTone();
             Serial.println("[Main] ❤️ 心跳已发送!");
             g_screenMode = SCREEN_HOME;
             g_screenModeEnter = now;
@@ -285,7 +289,7 @@ void loop() {
                         (strcmp(DEVICE_ID, "deviceA") == 0) ? "deviceB" : "deviceA",
                         time(nullptr)
                     );
-                    g_audio.playSendTone();
+                    if (!g_muted) g_audio.playSendTone();
                 }
                 g_screenMode = SCREEN_HOME;
                 g_screenModeEnter = now;
@@ -323,7 +327,7 @@ void loop() {
     // ---- 新消息处理 ----
     if (g_newMessageReceived) {
         g_newMessageReceived = false;
-        g_audio.playMessageTone();
+        if (!g_muted) g_audio.playMessageTone();
         g_display.setBrightness(255);  // 亮屏
         g_screenMode = SCREEN_HOME;
         updateScreen();
@@ -332,7 +336,7 @@ void loop() {
     // ---- 新心跳处理 ----
     if (g_newHeartbeatReceived) {
         g_newHeartbeatReceived = false;
-        g_audio.playHeartbeatTone();
+        if (!g_muted) g_audio.playHeartbeatTone();
         g_display.setBrightness(255);
         g_screenMode = SCREEN_HEART_ANIM;
         g_display.drawHeartAnimation();
@@ -360,7 +364,29 @@ void loop() {
         }
     }
 
-    delay(50);  // 主循环节流
+    // ---- 静音切换：屏幕朝下保持3秒 ----
+    float ax, ay, az;
+    g_gyro.getAccel(ax, ay, az);
+    // 当Z轴加速度接近 -1000mg（屏幕朝下，重力在-Z方向）
+    if (az < -800 && g_screenMode == SCREEN_HOME) {
+        if (g_faceDownStart == 0) {
+            g_faceDownStart = now;
+        } else if (now - g_faceDownStart > 3000) {
+            // 3秒到了，切换静音
+            g_muted = !g_muted;
+            g_faceDownStart = 0;
+            Serial.printf("[Main] 🔇 静音: %s\n", g_muted ? "开" : "关");
+            updateScreen();
+            // 给个短暂震动反馈... 不，没有震动马达。闪一下背光提示。
+            g_display.setBrightness(255);
+            delay(100);
+            g_display.setBrightness(g_muted ? SCREEN_DIM_BRIGHTNESS : 255);
+        }
+    } else {
+        g_faceDownStart = 0;  // 设备不是朝下的，重置计时
+    }
+
+    delay(50);
 }
 
 // ============================================================
@@ -519,8 +545,6 @@ void updateScreen() {
 
     String localTime = getLocalTimeStr();
     String localDate = getLocalDateStr();
-    String partnerTime = getPartnerTimeStr();
-    String partnerDate = getPartnerDateStr();
     String msgPreview = g_lastMessage;
     String msgTime = "";
     if (g_lastMessageTime > 0) {
@@ -533,15 +557,15 @@ void updateScreen() {
         MY_CITY,
         g_localTemp,
         g_localWeatherIcon.c_str(),
-        partnerTime.c_str(),
-        partnerDate.c_str(),
         PARTNER_CITY,
         g_partnerTemp,
         g_partnerWeatherIcon.c_str(),
         g_partnerStatus.c_str(),
         msgPreview.c_str(),
         msgTime.c_str(),
-        g_wifi.getRSSI()
+        g_wifi.getRSSI(),
+        false,  // TODO: 读取充电状态
+        g_muted
     );
 
     g_lastScreenRefresh = millis();

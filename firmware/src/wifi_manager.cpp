@@ -1,14 +1,21 @@
 /**
  * @file wifi_manager.cpp
- * @brief Whisper WiFi 连接管理 — 实现
+ * @brief Whisper WiFi 连接 + WiFiManager 配网
+ *
+ * 配网流程:
+ *  1. 开机 → 尝试连接已保存的 WiFi
+ *  2. 失败 → 自动开启 AP 热点 "Whisper-Setup"
+ *  3. 手机连接热点 → 弹出配网页面 → 输入WiFi+密码
+ *  4. 设备保存凭据 → 自动重启
  */
 
 #include "wifi_manager.h"
 #include "config.h"
 #include "storage.h"
+#include <WiFiManager.h>  // tzapu/WiFiManager
 #include <esp_wifi.h>
 
-extern Storage g_storage;  // 全局存储对象（在 main.cpp 中定义）
+extern Storage g_storage;
 
 WiFiManager::WiFiManager() {}
 
@@ -17,10 +24,11 @@ WiFiManager::~WiFiManager() {
 }
 
 bool WiFiManager::connect(const char* ssid, const char* password, unsigned long timeoutMs) {
+    // 优先用传入的凭据
     const char* useSSID = ssid;
     const char* usePass = password;
 
-    // 如果没有提供凭据，尝试从 NVS 读取已保存的
+    // 如果没传，尝试从 NVS 读取已保存的
     if (!useSSID || strlen(useSSID) == 0) {
         String savedSSID = g_storage.getWiFiSSID();
         if (savedSSID.length() > 0) {
@@ -31,9 +39,8 @@ bool WiFiManager::connect(const char* ssid, const char* password, unsigned long 
         }
     }
 
-    // 还没有凭据 → 无可用WiFi
     if (!useSSID || strlen(useSSID) == 0) {
-        Serial.println("[WiFi] 无可用WiFi凭据");
+        Serial.println("[WiFi] 无可用的WiFi凭据");
         return false;
     }
 
@@ -41,7 +48,7 @@ bool WiFiManager::connect(const char* ssid, const char* password, unsigned long 
 }
 
 bool WiFiManager::_doConnect(const char* ssid, const char* password, unsigned long timeoutMs) {
-    Serial.printf("[WiFi] 连接中: %s ...\n", ssid);
+    Serial.printf("[WiFi] 正在连接: %s ...\n", ssid);
 
     WiFi.mode(WIFI_STA);
     WiFi.setAutoReconnect(true);
@@ -59,7 +66,7 @@ bool WiFiManager::_doConnect(const char* ssid, const char* password, unsigned lo
         _reconnectCount = 0;
         _reconnectDelay = _reconnectBase;
 
-        // 保存凭据到 NVS
+        // 保存到 NVS
         g_storage.setWiFiCreds(ssid, password);
 
         Serial.printf("[WiFi] ✅ 已连接! IP: %s, RSSI: %d dBm\n",
@@ -75,7 +82,6 @@ bool WiFiManager::_doConnect(const char* ssid, const char* password, unsigned lo
 void WiFiManager::disconnect() {
     WiFi.disconnect(true);
     _connected = false;
-    Serial.println("[WiFi] 已断开");
 }
 
 bool WiFiManager::isConnected() {
@@ -104,23 +110,56 @@ String WiFiManager::getStatusText(wl_status_t status) {
 }
 
 bool WiFiManager::startConfigPortal(const char* apName, unsigned long timeoutSec) {
-    Serial.printf("[WiFi] 启动配网AP: %s (超时%lu秒)\n", apName, timeoutSec);
+    Serial.printf("[WiFi] 启动配网AP: %s (超时 %lu 秒)\n", apName, timeoutSec);
 
-    WiFi.mode(WIFI_AP_STA);
-    WiFi.softAP(apName);
+    // 使用 WiFiManager 库的 captive portal
+    WiFiManager wm;
+    wm.setConfigPortalTimeout(timeoutSec);
+    wm.setAPStaticIPConfig(IPAddress(192,168,4,1), IPAddress(192,168,4,1), IPAddress(255,255,255,0));
 
-    IPAddress apIP = WiFi.softAPIP();
-    Serial.printf("[WiFi] AP IP: %s\n", apIP.toString().c_str());
-    Serial.println("[WiFi] 用手机连接此WiFi热点进行配网（暂不支持Web配置，请串口设置凭据）");
+    // 尝试连接已保存的网络，如果失败就进入配网模式
+    String savedSSID = g_storage.getWiFiSSID();
+    String savedPass = g_storage.getWiFiPassword();
 
-    // TODO: 后续可接入 WiFiManager 库的 Web 配网页面
-    // 目前先返回，让调用者在 loop 中通过其他方式设置凭据
+    if (savedSSID.length() > 0) {
+        // 有已保存凭据，先尝试自动连接
+        Serial.printf("[WiFi] 尝试自动连接: %s\n", savedSSID.c_str());
+        wm.setConnectTimeout(10);  // 10秒超时
+        bool connected = wm.autoConnect(apName);
+        if (connected) {
+            _connected = true;
+            _reconnectCount = 0;
+            g_storage.setWiFiCreds(
+                WiFi.SSID().c_str(),
+                WiFi.psk().c_str()
+            );
+            Serial.printf("[WiFi] ✅ 自动连接成功! IP: %s\n", WiFi.localIP().toString().c_str());
+            return true;
+        }
+    }
 
-    return true;
+    // 启动配网门户
+    Serial.println("[WiFi] 进入配网模式，请用手机连接热点...");
+    bool connected = wm.startConfigPortal(apName);
+
+    if (connected) {
+        // 配网成功，保存凭据
+        g_storage.setWiFiCreds(
+            WiFi.SSID().c_str(),
+            WiFi.psk().c_str()
+        );
+        _connected = true;
+        _reconnectCount = 0;
+        Serial.printf("[WiFi] ✅ 配网成功! IP: %s\n", WiFi.localIP().toString().c_str());
+        return true;
+    } else {
+        Serial.println("[WiFi] ⚠️ 配网超时或失败");
+        return false;
+    }
 }
 
 void WiFiManager::loop() {
-    // 检查是否需要重连
+    // WiFi 断线自动重连
     if (!_connected && WiFi.status() != WL_CONNECTED) {
         unsigned long now = millis();
         if (now - _lastReconnectAttempt >= _reconnectDelay) {
@@ -130,32 +169,23 @@ void WiFiManager::loop() {
                 _reconnectDelay = _reconnectBase;
             } else {
                 _reconnectCount++;
-                // 指数退避
-                _reconnectDelay = min(_reconnectBase * (1 << min(_reconnectCount, 7)),
-                                      _reconnectMax);
+                _reconnectDelay = min(_reconnectBase * (1 << min(_reconnectCount, 7)), _reconnectMax);
                 Serial.printf("[WiFi] 下次重连: %u 秒后 (尝试 %d)\n",
                               _reconnectDelay / 1000, _reconnectCount);
             }
         }
     }
-
-    // 更新连接状态
     _connected = (WiFi.status() == WL_CONNECTED);
 }
 
 bool WiFiManager::_tryReconnect() {
     String ssid = g_storage.getWiFiSSID();
-    if (ssid.length() == 0) {
-        return false;
-    }
+    if (ssid.length() == 0) return false;
     String pass = g_storage.getWiFiPassword();
-
-    Serial.printf("[WiFi] 重连中 #%d: %s\n", _reconnectCount + 1, ssid.c_str());
-
     if (_reconnectCount >= _maxReconnectAttempts) {
-        Serial.println("[WiFi] 已达最大重连次数，停止重连。请重启设备。");
+        Serial.println("[WiFi] 重连次数耗尽，将重启进入配网模式");
+        ESP.restart();
         return false;
     }
-
     return _doConnect(ssid.c_str(), pass.c_str(), WIFI_CONNECT_TIMEOUT_MS);
 }
