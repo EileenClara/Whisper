@@ -17,10 +17,6 @@
 
 #include <Arduino.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // ============================================================
 // << 用户配置 — 编译前必须修改 >>
 // ============================================================
@@ -185,9 +181,5 @@ static const StatusOption STATUS_OPTIONS[] = {
 
 // ---- 默认值 ----
 #define DEFAULT_HOSTNAME            "Whisper"
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* CONFIG_H */
