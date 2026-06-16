@@ -2,7 +2,6 @@
 #define NETWORK_WIFI_H
 
 #include <WiFi.h>
-#include <WiFiManager.h>
 #include "config.h"
 
 enum class WiFiState { DISCONNECTED, CONNECTING, CONNECTED };
@@ -14,13 +13,11 @@ public:
     static bool isConnected();
     static WiFiState state();
     static String localIP();
-    static void startPortal();
 
 private:
     static WiFiState _state;
     static unsigned long _lastRetry, _bootTime;
     static String _ssid, _pwd;
-    static WiFiManager _wm;
     static bool _portalOpen;
 };
 
