@@ -59,6 +59,14 @@ void NetworkWiFi::loop() {
                 _portalRunning = false;
                 Serial.printf("[WiFi] Portal success! IP: %s\n", WiFi.localIP().toString().c_str());
             }
+            // portal 3 分钟超时 → 重试原 WiFi
+            if (now - _lastAttempt > 185000) {
+                WiFi.mode(WIFI_STA);
+                Serial.println("[WiFi] Portal timeout — retrying saved WiFi...");
+                _state = WiFiState::CONNECTING;
+                _lastAttempt = now;
+                WiFi.begin(_ssid.c_str(), _pwd.c_str());
+            }
             break;
 
         case WiFiState::CONNECTED:
@@ -78,6 +86,7 @@ void NetworkWiFi::loop() {
 void NetworkWiFi::startPortal() {
     _state = WiFiState::PORTAL;
     _portalRunning = true;
+    _lastAttempt = millis();  // 记录 portal 开始时间
 
     // 屏幕提示
     TFT_eSPI& tft = DisplayScreen::tft();
