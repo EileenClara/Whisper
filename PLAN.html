@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>PLAN.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> or <div class="page"></div> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="smalldesktopdisplay-v20--情侣互动桌面显示器-实施计划">SmallDesktopDisplay v2.0 — 情侣互动桌面显示器 实施计划</h1>
+<h2 id="背景">背景</h2>
+<p>将现有的 ESP32 桌面显示器（V1.4，原作者 Misaka/微车游）完全重写为 ESP32-S3 情侣互动设备。两台设备通过东京 VPS 上的 MQTT broker 通信，共享北京时间、双城市天气、双方状态，支持发送爱心互动。</p>
+<h2 id="回答你的问题">回答你的问题</h2>
+<ul>
+<li><strong>需要联网吗？</strong> 需要。ESP32 通过 WiFi 联网做三件事：NTP 授时（阿里云）、MQTT 连接东京 VPS、通过 VPS 代理获取天气。</li>
+<li><strong>需要 VPS 吗？</strong> 需要。VPS 上跑两个东西：<strong>Mosquitto MQTT Broker</strong>（设备间通信）+ <strong>Python 天气代理脚本</strong>（用你的 Key <code>271834fb90974033d0a897a008687d88</code> 调 OpenWeatherMap）。</li>
+</ul>
+<h2 id="架构总览">架构总览</h2>
+<pre class="hljs"><code><div>┌─────────────────┐         TLS:8883          ┌─────────────────┐
+│  ESP32-S3 (果果) │◄────────MQTT─────────────►│  ESP32-S3 (vv)   │
+│  240x240 TFT     │                           │  240x240 TFT     │
+│  XPT2046 Touch   │                           │  XPT2046 Touch   │
+└────────┬─────────┘                           └────────┬─────────┘
+         │                                              │
+         │         东京 VPS (Mosquitto Broker)            │
+         └────────────┬─────────────────────────────────┘
+                      │ MQTT weather/req
+                      ▼
+              ┌───────────────┐
+              │ weather_proxy │──► OpenWeatherMap API
+              │   (Python)    │    (Beijing + Singapore)
+              └───────────────┘
+</div></code></pre>
+<h2 id="模块化文件结构从-1671-行单文件拆分为模块">模块化文件结构（从 1671 行单文件拆分为模块）</h2>
+<pre class="hljs"><code><div>SmallDesktopDisplay/
+├── SmallDesktopDisplay.ino      # 入口：setup() / loop()
+├── config.h                     # 所有常量、引脚、版本号
+├── app_identity.h/cpp           # 设备身份：果果/vv（首次开机选择）
+├── storage_prefs.h/cpp          # Preferences(NVS) 持久化存储
+├── backlight.h/cpp              # LEDC PWM 背光控制（替代 analogWrite）
+├── display_screen.h/cpp         # TFT 初始化 + 精灵管理 + 脏区域追踪
+├── touch_handler.h/cpp          # XPT2046 触摸读取 + 区域检测
+├── network_wifi.h/cpp           # WiFi 非阻塞状态机 + WiFiManager 配网
+├── network_ntp.h/cpp            # NTP 北京时间同步
+├── network_mqtt.h/cpp           # MQTT+TLS 客户端 + LWT + 消息回调
+├── ui_clock.h/cpp               # 数码管时钟（复用 Number 类）
+├── ui_weather.h/cpp             # 双城市天气面板渲染
+├── ui_status.h/cpp              # 双人状态显示 + 状态选择菜单
+├── ui_heart.h/cpp               # 爱心状态机 + 发送/接收/渐隐动画
+├── weather_bridge.h/cpp         # 通过 MQTT 请求/接收天气数据
+├── app_state.h/cpp              # 全局应用状态聚合
+├── number.h/cpp                 # [复用] 数码管渲染类
+├── weathernum.h/cpp             # [复用] 天气图标渲染类
+├── font/                        # [复用] 全部 31 个字体/数字文件
+├── img/                         # [复用] 全部图像资源
+│   ├── tianqi/                  # 天气图标 JPEG (t0~t99)
+│   ├── pangzi/                  # 太空人动画帧（可选项）
+│   └── temperature/humidity.h   # 温湿度图标
+├── certs/ca_cert.h              # [新] MQTT TLS CA 证书
+└── vps/                         # [新] VPS 端脚本（不编译进 ESP32）
+    ├── mosquitto.conf           # Mosquitto broker 配置
+    ├── generate_certs.sh        # TLS 证书生成脚本
+    └── weather_proxy.py         # Python MQTT→OpenWeatherMap 代理
+</div></code></pre>
+<h2 id="esp32-s3-引脚分配修复原版冲突">ESP32-S3 引脚分配（修复原版冲突）</h2>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>引脚</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TFT SCK</td>
+<td>GPIO3</td>
+<td>SPI 时钟</td>
+</tr>
+<tr>
+<td>TFT MOSI</td>
+<td>GPIO19</td>
+<td>SPI 数据</td>
+</tr>
+<tr>
+<td>TFT MISO</td>
+<td>GPIO20</td>
+<td>SPI 读取（触摸共用）</td>
+</tr>
+<tr>
+<td>TFT DC</td>
+<td>GPIO2</td>
+<td>数据/命令</td>
+</tr>
+<tr>
+<td>TFT RST</td>
+<td>GPIO18</td>
+<td>复位</td>
+</tr>
+<tr>
+<td><strong>TFT 背光</strong></td>
+<td><strong>GPIO1</strong></td>
+<td><strong>LEDC PWM（原版与 DC 冲突！已修复）</strong></td>
+</tr>
+<tr>
+<td>Touch CS</td>
+<td>GPIO5</td>
+<td>XPT2046 片选</td>
+</tr>
+<tr>
+<td>Touch IRQ</td>
+<td>GPIO6</td>
+<td>触摸中断</td>
+</tr>
+<tr>
+<td>DHT11</td>
+<td>GPIO12</td>
+<td>温湿度（可选保留）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键兼容性修复：</strong></p>
+<ul>
+<li><code>analogWrite()</code> → <code>ledcSetup(0,5000,8)</code> + <code>ledcWrite(0,duty)</code>（ESP32-S3 不支持 analogWrite）</li>
+<li><code>EEPROM</code> → <code>Preferences</code>（NVS 存储，ESP32-S3 推荐）</li>
+<li>WiFi 阻塞等待 → 非阻塞状态机（setup 不再死等）</li>
+</ul>
+<h2 id="mqtt-通信协议">MQTT 通信协议</h2>
+<p>所有主题前缀 <code>sdd/</code>，设备 ID 为 <code>gugu</code> 或 <code>vv</code>。</p>
+<table>
+<thead>
+<tr>
+<th>主题</th>
+<th>方向</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sdd/{id}/status</code></td>
+<td>发布 (LWT)</td>
+<td>在线状态（retained），断线自动设 offline</td>
+</tr>
+<tr>
+<td><code>sdd/{id}/mood</code></td>
+<td>发布</td>
+<td>当前状态（0=空闲 1=游戏 2=忙碌 3=想你 4=干饭 5=学习 6=睡觉 7=踢球）</td>
+</tr>
+<tr>
+<td><code>sdd/{id}/heart/send</code></td>
+<td>发布</td>
+<td>发送爱心 {from, to, heart_id, send_time, expires_at}</td>
+</tr>
+<tr>
+<td><code>sdd/{id}/heart/ack</code></td>
+<td>发布</td>
+<td>接受爱心 {from, to, heart_id, ack_time}</td>
+</tr>
+<tr>
+<td><code>sdd/+/weather/req</code></td>
+<td>订阅</td>
+<td>VPS 代理监听，ESP32 发布请求</td>
+</tr>
+<tr>
+<td><code>sdd/weather/resp</code></td>
+<td>订阅</td>
+<td>VPS 广播双城市天气 JSON</td>
+</tr>
+</tbody>
+</table>
+<p><strong>TLS 方案：</strong> 服务器单向 TLS（ESP32 内嵌 CA 证书验证 broker），客户端通过 MQTT username 区分身份。简单且安全。</p>
+<h2 id="240240-屏幕布局紧凑单页">240×240 屏幕布局（紧凑单页）</h2>
+<pre class="hljs"><code><div>┌──────────────────────────────┐ y=0
+│ 北京 ☀ 25°  │ 新加坡 🌧 30°  │ 天气区 (0-80)
+│ 湿度 65%   │ 湿度 80%       │
+├──────────────────────────────┤ y=80
+│                              │
+│   14 : 30 : 25              │ 时钟区 (80-150)
+│   (36×60 大数码管)          │
+│   6月14日  周六              │
+├──────────────────────────────┤ y=150
+│ 果果 💗想你  │  vv 🟣学习   │ 状态区 (150-175) 并排
+├──────────────────────────────┤ y=175
+│                              │
+│  ♥♥♥ 爱心堆积区             │ 爱心区 (175-240)
+│  无角色: 点我发爱心         │
+│  发送方: ♥已发3 (冷却中)    │
+│  接收方: 爱心堆底部         │
+└──────────────────────────────┘ y=240
+</div></code></pre>
+<h3 id="触摸区域映射极简设计无独立按钮">触摸区域映射（极简设计，无独立按钮）</h3>
+<ul>
+<li><strong>(0,0)-(75,80)</strong> → 北京天气区（点击强制刷新天气）</li>
+<li><strong>(75,0)-(170,80)</strong> → 新加坡天气区（点击强制刷新天气）</li>
+<li><strong>(0,150)-(120,175)</strong> → 果果状态区（并排左半边，点击自己 → 跳转全屏状态选择页）</li>
+<li><strong>(120,150)-(239,175)</strong> → vv状态区（并排右半边，点击自己 → 跳转全屏状态选择页；对方只读）</li>
+<li><strong>(0,175)-(239,240)</strong> → <strong>爱心区</strong>：
+<ul>
+<li>IDLE 时：点击 → 成为发送方，发第 1 颗爱心</li>
+<li>SENDER 时（冷却已过）：点击 → 再发 1 颗</li>
+<li>RECEIVER 时（有爱心堆积）：点击 → 接受全部爱心，清空</li>
+</ul>
+</li>
+</ul>
+<h3 id="状态选择页全屏-240240点击自己状态后跳转">状态选择页（全屏 240×240，点击自己状态后跳转）</h3>
+<p>整屏 8 个状态选项，每行 2 个，4 行排列。每个选项带颜色圆点 + 状态名。点击选中 → 保存 + 发布 MQTT → 返回主屏。</p>
+<h3 id="8-种状态及颜色全屏选择页2-列--4-行">8 种状态及颜色（全屏选择页，2 列 × 4 行）</h3>
+<p>点击自己状态 → 跳转整屏。每格 100×50，带颜色圆点 + 状态名。点击选中 → 保存 + 发布 MQTT → 返回主屏。</p>
+<table>
+<thead>
+<tr>
+<th>状态</th>
+<th>颜色值</th>
+<th>色块</th>
+<th>位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>空闲</td>
+<td>0x07E0</td>
+<td>🟢</td>
+<td>第1行左</td>
+</tr>
+<tr>
+<td>游戏</td>
+<td>0x001F</td>
+<td>🔵</td>
+<td>第1行右</td>
+</tr>
+<tr>
+<td>忙碌</td>
+<td>0xFD20</td>
+<td>🟠</td>
+<td>第2行左</td>
+</tr>
+<tr>
+<td>想你</td>
+<td>0xF81F</td>
+<td>💗</td>
+<td>第2行右</td>
+</tr>
+<tr>
+<td>干饭</td>
+<td>0xFFE0</td>
+<td>🟡</td>
+<td>第3行左</td>
+</tr>
+<tr>
+<td>学习</td>
+<td>0x8010</td>
+<td>🟣</td>
+<td>第3行右</td>
+</tr>
+<tr>
+<td>睡觉</td>
+<td>0x18C4</td>
+<td>🔷</td>
+<td>第4行左</td>
+</tr>
+<tr>
+<td>踢球</td>
+<td>0x07FF</td>
+<td>🟦</td>
+<td>第4行右</td>
+</tr>
+</tbody>
+</table>
+<h2 id="核心状态机">核心状态机</h2>
+<h3 id="爱心交互流程单向累积模型不自动消失">爱心交互流程（单向累积模型，不自动消失）</h3>
+<p><strong>核心规则：</strong></p>
+<ul>
+<li>同一时间只有<strong>一个人是发送方</strong>，另一个人是接收方</li>
+<li>发送方每 30 分钟可发 1 颗爱心，上限 <strong>99 颗</strong></li>
+<li>爱心<strong>不会自动消失</strong>——只有接收方点击接受后，双方爱心区才清空</li>
+<li>清空后，<strong>任意一方</strong>都可以重新发起（谁先点谁就是发送方）</li>
+</ul>
+<pre class="hljs"><code><div>初始状态：双方爱心区为空，任意一方可发起
+
+A 点击爱心区（空）→ A 成为发送方
+    │
+    ├─ 发送第 1 颗 → MQTT publish heart/send (count=1)
+    │   A 爱心区显示：&quot;♥ 已发 1&quot;
+    │   B 爱心区：爱心从屏幕顶端掉落，滚到底部堆积
+    │
+    ├─ 30分钟后，A 再点击 → 发送第 2 颗 (count=2)
+    │   A 爱心区显示：&quot;♥ 已发 2&quot;
+    │   B 爱心区：第 2 颗爱心掉落，堆在第 1 颗旁边
+    │
+    ├─ A 继续发... count=3, 4, 5 ... 上限 99
+    │
+    └─ B 点击爱心区（有爱心堆积）→ 接受！
+        │
+        ├─ MQTT publish heart/ack
+        ├─ 双方爱心区清空
+        └─ 回到初始状态，任意一方可重新发起
+</div></code></pre>
+<h3 id="爱心显示动画">爱心显示动画</h3>
+<p><strong>接收方（B 设备）爱心堆积效果：</strong></p>
+<ul>
+<li>爱心从屏幕<strong>顶端掉落</strong>（带简单动画），滚入底部爱心区</li>
+<li>爱心在底部<strong>随机位置堆积</strong>，带微小旋转角度，不完全重叠</li>
+<li>爱心大小约 14×14 像素，底部 65px 空间可容纳多行</li>
+<li>第 N 颗爱心坐标随机微调，模拟自然散落</li>
+</ul>
+<p><strong>发送方（A 设备）爱心区显示：</strong></p>
+<ul>
+<li>纯文字显示 &quot;♥ 已发 N 颗&quot;</li>
+<li>30 分钟冷却中显示 &quot;♥ 已发 N (冷却 mm:ss)&quot;</li>
+</ul>
+<h3 id="状态机heartsession">状态机（HeartSession）</h3>
+<pre class="hljs"><code><div>enum HeartRole { NONE, SENDER, RECEIVER };
+
+状态：
+IDLE       → 双方都无角色，谁先点爱心区谁变 SENDER
+SENDING    → 发送方刚发出，等待 MQTT 确认
+SENT        → 发送方已确认，显示计数，30分钟冷却计时中
+RECEIVING  → 接收方，爱心堆积中，等待用户点击接受
+ACCEPTING  → 接收方点击接受，播放清空动画
+</div></code></pre>
+<h3 id="天气数据流">天气数据流</h3>
+<pre class="hljs"><code><div>ESP32 → MQTT weather/req → VPS weather_proxy.py 
+     → OpenWeatherMap API (Beijing + Singapore)
+     → MQTT weather/resp → 两台 ESP32 同时收到
+</div></code></pre>
+<h2 id="vps-部署清单">VPS 部署清单</h2>
+<ol>
+<li><strong>Mosquitto Broker</strong>（Docker 或 apt 安装），配置 TLS 8883 端口</li>
+<li><strong>TLS 证书</strong>：自签 CA → 签发服务器证书，ESP32 嵌入 CA 公钥验证</li>
+<li><strong>Python 天气代理</strong>：监听 MQTT 天气请求 → 调 OpenWeatherMap → 发布结果</li>
+<li><strong>ACL 权限</strong>：只允许 <code>sdd/#</code> 主题，设备用户密码认证</li>
+</ol>
+<h2 id="实施顺序5-个阶段">实施顺序（5 个阶段）</h2>
+<h3 id="阶段-1基础框架">阶段 1：基础框架</h3>
+<ul>
+<li>创建所有 <code>.h/.cpp</code> 文件骨架</li>
+<li>实现 <code>config.h</code>、<code>storage_prefs</code>、<code>backlight</code>（LEDC）、<code>display_screen</code></li>
+<li>配置 TFT_eSPI 库的 <code>User_Setup.h</code> 匹配 ESP32-S3 引脚</li>
+<li>验证：屏幕点亮、背光 PWM 正常</li>
+</ul>
+<h3 id="阶段-2网络连接">阶段 2：网络连接</h3>
+<ul>
+<li><code>network_wifi</code>（非阻塞 WiFi + WiFiManager 配网）</li>
+<li><code>network_ntp</code>（北京时间同步）</li>
+<li><code>network_mqtt</code>（TLS 连接 + LWT + 自动重连）</li>
+<li>VPS 部署 Mosquitto + 生成证书</li>
+<li>验证：WiFi 连接、NTP 同步、MQTT 连接成功</li>
+</ul>
+<h3 id="阶段-3核心-ui">阶段 3：核心 UI</h3>
+<ul>
+<li><code>ui_clock</code>（复用 Number 类 + 数字 JPEG）</li>
+<li><code>ui_weather</code>（双城市天气面板布局）</li>
+<li><code>weather_bridge</code>（MQTT 天气请求/响应）</li>
+<li>VPS 部署 Python 天气代理</li>
+<li>验证：时钟显示、双城市天气正常</li>
+</ul>
+<h3 id="阶段-4交互功能">阶段 4：交互功能</h3>
+<ul>
+<li><code>touch_handler</code>（XPT2046 驱动 + 区域检测 + 去抖）</li>
+<li><code>app_identity</code>（首次开机身份选择界面）</li>
+<li><code>ui_status</code>（状态选择菜单 + MQTT 同步）</li>
+<li><code>ui_heart</code>（爱心完整状态机 + 几何绘制爱心形状）</li>
+<li>验证：触摸可用、状态同步、爱心互通</li>
+</ul>
+<h3 id="阶段-5打磨">阶段 5：打磨</h3>
+<ul>
+<li>爱心动画优化（弹跳、渐隐、粒子效果）</li>
+<li>WiFi/MQTT 断线重连健壮性</li>
+<li>伙伴在线/离线状态指示</li>
+<li>堆内存优化（减少 String 碎片）</li>
+<li>恢复出厂设置（双键长按）</li>
+</ul>
+<h2 id="关键技术风险及对策">关键技术风险及对策</h2>
+<table>
+<thead>
+<tr>
+<th>风险</th>
+<th>对策</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TJpg_Decoder + WiFi + MQTT 并发</td>
+<td>JPEG 解码同步但 S3 够快；MQTT 低优先级</td>
+</tr>
+<tr>
+<td>XPT2046 触摸校准不一致</td>
+<td>校准值存 Preferences，预留四角校准模式</td>
+</tr>
+<tr>
+<td>VPS 天气代理宕机</td>
+<td>ESP32 缓存上次数据，超 30 分钟显示&quot;(旧)&quot;标记</td>
+</tr>
+<tr>
+<td>双方同时发爱心导致状态混乱</td>
+<td>heart_id 含设备前缀+时间戳，独立管理各自生命周期</td>
+</tr>
+<tr>
+<td>堆碎片化（String 操作频繁）</td>
+<td>热路径用固定 char 数组，持久 String 用 reserve()</td>
+</tr>
+</tbody>
+</table>
+<h2 id="需要保留的现有资源">需要保留的现有资源</h2>
+<ul>
+<li><code>font/ZdyLwFont_20.h</code> — 中文矢量字体</li>
+<li><code>font/W_3660_i*.h</code> / <code>O_3660_i*.h</code> / <code>W_1830_i*.h</code> — 30 个数字图片</li>
+<li><code>img/tianqi/t*.h</code> — 22 个天气图标</li>
+<li><code>img/temperature.h</code> / <code>img/humidity.h</code> — 温湿度图标</li>
+<li><code>number.h/cpp</code> — Number 类（直接复用）</li>
+<li><code>weathernum.h/cpp</code> — WeatherNum 类（直接复用）</li>
+</ul>
+<h2 id="需要的-arduino-库-platformioini">需要的 Arduino 库 (platformio.ini)</h2>
+<pre class="hljs"><code><div><span class="hljs-section">[env:esp32-s3-devkitc-1]</span>
+<span class="hljs-attr">platform</span> = espressif32
+<span class="hljs-attr">board</span> = esp32-s3-devkitc-<span class="hljs-number">1</span>
+<span class="hljs-attr">framework</span> = ardui<span class="hljs-literal">no</span>
+<span class="hljs-attr">lib_deps</span> =
+    bodmer/TFT_eSPI @ ^2.5.0
+    bodmer/TJpg_Decoder @ ^1.1.0
+    knolleary/PubSubClient @ ^2.8
+    bblanchon/ArduinoJson @ ^6.21.0
+    tzapu/WiFiManager @ ^2.0.0
+    paulstoffregen/Time @ ^1.6.1
+</div></code></pre>
+
+</body>
+</html>

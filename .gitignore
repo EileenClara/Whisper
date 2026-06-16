@@ -1,0 +1,8 @@
+.DS_Store
+*.bin
+ScreenTest/
+ScreenTest2/
+TouchFind/
+recover.py
+recover.ps1
+convert_image.py
