@@ -24,8 +24,6 @@ void handlePortalRoot() {
         String s = portalServer->arg("ssid");
         String p = portalServer->arg("pwd");
         StoragePrefs::setWiFiCredentials(s, p);
-        NetworkWiFi::_ssid = s;
-        NetworkWiFi::_pwd  = p;
         html += "<p>Saved! Restarting...</p>";
         portalServer->send(200, "text/html", html);
         delay(500);
