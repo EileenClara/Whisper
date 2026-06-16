@@ -5,7 +5,7 @@
 #include <WiFiManager.h>
 #include "config.h"
 
-enum class WiFiState { DISCONNECTED, CONNECTING, CONNECTED, PORTAL };
+enum class WiFiState { DISCONNECTED, CONNECTING, CONNECTED };
 
 class NetworkWiFi {
 public:
@@ -18,10 +18,10 @@ public:
 
 private:
     static WiFiState _state;
-    static unsigned long _lastAttempt;
+    static unsigned long _lastRetry, _bootTime;
     static String _ssid, _pwd;
     static WiFiManager _wm;
-    static bool _portalRunning;
+    static bool _portalOpen;
 };
 
 #endif
