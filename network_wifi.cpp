@@ -1,87 +1,113 @@
 /*
- * network_wifi.cpp — WiFi 非阻塞实现
+ * network_wifi.cpp — WiFi + WiFiManager 配网
+ * 连不上已保存的 WiFi → 自动开热点 "AutoConnectAP"
  */
 
 #include "network_wifi.h"
 #include "storage_prefs.h"
+#include "display_screen.h"
 
 WiFiState NetworkWiFi::_state = WiFiState::DISCONNECTED;
 unsigned long NetworkWiFi::_lastAttempt = 0;
 String NetworkWiFi::_ssid = "";
 String NetworkWiFi::_pwd = "";
+WiFiManager NetworkWiFi::_wm;
+bool NetworkWiFi::_portalRunning = false;
 
-void NetworkWiFi::begin(const char* ssid, const char* pwd) {
-    _ssid = String(ssid);
-    _pwd  = String(pwd);
-    _connect(ssid, pwd);
-}
-
-void NetworkWiFi::begin() {
+void NetworkWiFi::begin(const char* fallbackSSID, const char* fallbackPWD) {
+    // 先从 Preferences 加载，没有就用 fallback
     _ssid = StoragePrefs::getWiFiSSID();
     _pwd  = StoragePrefs::getWiFiPassword();
-    if (_ssid.length() > 0) {
-        _connect(_ssid.c_str(), _pwd.c_str());
-    }
-}
 
-void NetworkWiFi::_connect(const char* ssid, const char* pwd) {
+    if (_ssid.length() == 0) {
+        _ssid = fallbackSSID;
+        _pwd  = fallbackPWD;
+    }
+
+    WiFi.mode(WIFI_STA);
     _state = WiFiState::CONNECTING;
     _lastAttempt = millis();
 
-    WiFi.mode(WIFI_STA);
-    WiFi.setAutoReconnect(true);
-    WiFi.begin(ssid, pwd);
-
-    Serial.printf("[WiFi] Connecting to %s...\n", ssid);
+    WiFi.begin(_ssid.c_str(), _pwd.c_str());
+    Serial.printf("[WiFi] Connecting to %s...\n", _ssid.c_str());
 }
 
 void NetworkWiFi::loop() {
     wl_status_t status = WiFi.status();
+    unsigned long now = millis();
 
     switch (_state) {
         case WiFiState::CONNECTING:
             if (status == WL_CONNECTED) {
                 _state = WiFiState::CONNECTED;
-                Serial.printf("[WiFi] Connected! IP: %s\n", WiFi.localIP().toString().c_str());
-                // 保存凭证
                 StoragePrefs::setWiFiCredentials(_ssid, _pwd);
-            } else if (millis() - _lastAttempt > WIFI_CONNECT_TIMEOUT_MS) {
-                _state = WiFiState::DISCONNECTED;
-                Serial.println("[WiFi] Connect timeout");
+                Serial.printf("[WiFi] Connected! IP: %s\n", WiFi.localIP().toString().c_str());
+            } else if (now - _lastAttempt > 25000) {
+                // 25 秒没连上 → 开 portal
+                Serial.println("[WiFi] Timeout — opening portal...");
+                startPortal();
+            }
+            break;
+
+        case WiFiState::PORTAL:
+            _wm.process();
+            if (WiFi.status() == WL_CONNECTED) {
+                _state = WiFiState::CONNECTED;
+                _ssid = WiFi.SSID();
+                _pwd  = WiFi.psk();
+                StoragePrefs::setWiFiCredentials(_ssid, _pwd);
+                _portalRunning = false;
+                Serial.printf("[WiFi] Portal success! IP: %s\n", WiFi.localIP().toString().c_str());
             }
             break;
 
         case WiFiState::CONNECTED:
             if (status != WL_CONNECTED) {
-                _state = WiFiState::RECONNECTING;
-                _lastAttempt = millis();
-                Serial.println("[WiFi] Lost connection, reconnecting...");
-            }
-            break;
-
-        case WiFiState::RECONNECTING:
-            if (status == WL_CONNECTED) {
-                _state = WiFiState::CONNECTED;
-                Serial.printf("[WiFi] Reconnected! IP: %s\n", WiFi.localIP().toString().c_str());
-            } else if (millis() - _lastAttempt > WIFI_RECONNECT_INTERVAL_MS) {
-                WiFi.reconnect();
-                _lastAttempt = millis();
+                _state = WiFiState::CONNECTING;
+                _lastAttempt = now;
+                WiFi.begin(_ssid.c_str(), _pwd.c_str());
+                Serial.println("[WiFi] Lost — reconnecting...");
             }
             break;
 
         case WiFiState::DISCONNECTED:
-            // 重试连接
-            if (millis() - _lastAttempt > WIFI_RECONNECT_INTERVAL_MS) {
-                _connect(_ssid.c_str(), _pwd.c_str());
-            }
             break;
     }
+}
+
+void NetworkWiFi::startPortal() {
+    _state = WiFiState::PORTAL;
+    _portalRunning = true;
+
+    // 屏幕提示
+    TFT_eSPI& tft = DisplayScreen::tft();
+    tft.fillScreen(TFT_BLACK);
+    tft.setTextColor(TFT_GREEN, TFT_BLACK);
+    tft.setTextSize(2);
+    tft.setCursor(20, 60);
+    tft.print("WiFi Setup");
+    tft.setTextSize(1);
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    tft.setCursor(30, 100);
+    tft.print("Connect to WiFi:");
+    tft.setTextColor(TFT_YELLOW, TFT_BLACK);
+    tft.setCursor(55, 120);
+    tft.print("AutoConnectAP");
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    tft.setCursor(30, 150);
+    tft.print("Then open browser");
+    tft.setCursor(65, 170);
+    tft.print("192.168.4.1");
+
+    _wm.resetSettings();
+    _wm.setConfigPortalTimeout(180);  // 3 分钟超时
+
+    // 非阻塞模式
+    _wm.startConfigPortal("AutoConnectAP");
 }
 
 bool NetworkWiFi::isConnected() {
     return _state == WiFiState::CONNECTED && WiFi.status() == WL_CONNECTED;
 }
-
 WiFiState NetworkWiFi::state() { return _state; }
 String NetworkWiFi::localIP() { return WiFi.localIP().toString(); }
-String NetworkWiFi::ssid() { return _ssid; }

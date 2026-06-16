@@ -2,11 +2,10 @@
 #define NETWORK_WIFI_H
 
 #include <WiFi.h>
+#include <WiFiManager.h>
 #include "config.h"
 
-enum class WiFiState {
-    DISCONNECTED, CONNECTING, CONNECTED, PORTAL
-};
+enum class WiFiState { DISCONNECTED, CONNECTING, CONNECTED, PORTAL };
 
 class NetworkWiFi {
 public:
@@ -18,11 +17,11 @@ public:
     static void startPortal();
 
 private:
-    static void _connect(const char* ssid, const char* pwd);
     static WiFiState _state;
     static unsigned long _lastAttempt;
-    static String _ssid;
-    static String _pwd;
+    static String _ssid, _pwd;
+    static WiFiManager _wm;
+    static bool _portalRunning;
 };
 
 #endif
