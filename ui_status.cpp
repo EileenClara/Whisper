@@ -25,7 +25,7 @@ void UIStatus::begin() {
 // ===== 主屏状态栏 (y=160~180) =====
 void UIStatus::drawStatusBar() {
     TFT_eSPI& tft = DisplayScreen::tft();
-    const char* moodEn[] = {"Free","Game","Busy","MissU","Eat","Study","Sleep","Soccer"};
+    const char* moodEn[] = {"Free","Play","Busy","MissU","Eat","Study","Sleep","Soccer"};
 
     // yougo (左半边)
     uint16_t mc = MOOD_COLORS[_ownMood];
@@ -94,7 +94,7 @@ void UIStatus::_drawPicker() {
     TFT_eSPI& tft = DisplayScreen::tft();
     tft.fillScreen(TFT_BLACK);
 
-    const char* moodEn[] = {"Free","Game","Busy","MissU","Eat","Study","Sleep","Soccer"};
+    const char* moodEn[] = {"Free","Play","Busy","MissU","Eat","Study","Sleep","Soccer"};
 
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
     tft.setTextSize(2);
