@@ -46,15 +46,6 @@ void drawMainScreen() {
 
     // 天气
     UIWeather::draw();
-    // 对方状态图标 (时钟左边, 48x48)
-    {
-        const uint16_t* icons[] = {mood_0_img,mood_1_img,mood_2_img,mood_3_img,
-                                   mood_4_img,mood_5_img,mood_6_img,mood_7_img};
-        int pm = UIStatus::partnerMood();
-        tft.setSwapBytes(true);
-        tft.pushImage(4, 88, MOOD_W, MOOD_H, icons[pm]);
-        tft.setSwapBytes(false);
-    }
     // 时钟
     UIClock::draw();
     // 状态
@@ -277,6 +268,20 @@ void loop() {
     // ===== 按需刷新 (脏区域) =====
     if (currentPage == PAGE_MAIN) {
         UIClock::update();
+        // 补画对方状态图标 (时钟 fillRect 会擦掉它)
+        {
+            TFT_eSPI& t = DisplayScreen::tft();
+            if (UIStatus::partnerOnline()) {
+                int pm = UIStatus::partnerMood();
+                const uint16_t* icons[] = {mood_0_img,mood_1_img,mood_2_img,mood_3_img,
+                                           mood_4_img,mood_5_img,mood_6_img,mood_7_img};
+                t.setSwapBytes(true);
+                t.pushImage(4, 88, MOOD_W, MOOD_H, icons[pm]);
+                t.setSwapBytes(false);
+            } else {
+                t.fillRect(4, 88, MOOD_W, MOOD_H, TFT_BLACK);
+            }
+        }
         UIWeather::update();
 
         if (DisplayScreen::dirtyZones() != 0) {

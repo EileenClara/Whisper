@@ -57,13 +57,7 @@ void UIHeart::onTap() {
             Serial.println("[Heart] Sent #1 — now SENDER");
             break;
 
-        case HR_SENDER: {
-            // 发送方 → 检查冷却，再发一颗
-            unsigned long cd = cooldownRemaining();
-            if (cd > 0) {
-                Serial.printf("[Heart] Cooldown: %lu ms remaining\n", cd);
-                return;
-            }
+        case HR_SENDER:
             if (_count >= HEART_MAX_COUNT) {
                 Serial.println("[Heart] Max 99 reached");
                 return;
@@ -199,19 +193,15 @@ void UIHeart::_drawSenderArea() {
     tft.print("Sent: ");
     tft.print(_count);
 
-    unsigned long cd = cooldownRemaining();
     tft.setTextSize(1);
-    if (cd > 0) {
-        int sec = cd / 1000;
-        int min = sec / 60;
-        sec = sec % 60;
-        tft.setTextColor(0x7BEF, TFT_BLACK);
-        tft.setCursor(60, 224);
-        tft.printf("Cooldown %02d:%02d", min, sec);
-    } else if (_count < HEART_MAX_COUNT) {
+    if (_count < HEART_MAX_COUNT) {
         tft.setTextColor(0x07E0, TFT_BLACK);
         tft.setCursor(70, 224);
-        tft.print("Ready to send");
+        tft.print("Tap to send more");
+    } else {
+        tft.setTextColor(0x7BEF, TFT_BLACK);
+        tft.setCursor(70, 224);
+        tft.print("Max 99 reached");
     }
 }
 
