@@ -1,131 +1,133 @@
+[![zh](https://img.shields.io/badge/lang-%E4%B8%AD%E6%96%87-gray)](README_CN.md)
+[![en](https://img.shields.io/badge/lang-en-red)](README.md)
+
 # SmallDesktopDisplay v2.0
 
-ESP32-S3 情侣互动桌面显示器。两台设备通过 MQTT 通信，共享北京时间、双城天气、实时状态，支持发送爱心。
+ESP32-S3 couple's interactive desktop display. Two devices communicate via MQTT, sharing Beijing time, dual-city weather, real-time status, and heart messaging.
 
-## 功能
+## Features
 
-- 🕐 **北京时间** — NTP 同步，48px 数码管显示
-- 🌤️ **双城天气** — 北京 + 新加坡，OpenWeatherMap API
-- 💬 **实时状态** — 8 种：Free / Play / Busy / MissU / Eat / Study / Sleep / Soccer
-- 🎨 **对方状态图标** — 时钟左边显示对方当前状态图
-- 💗 **爱心互动** — 摸一下发一颗，对方屏幕底部堆积，上限 99，接受后全部清空
-- 📡 **MQTT 通信** — 东京 VPS 中转，离线消息 retained，重启不丢
-- 📶 **WiFi 配网** — 连不上时自动开热点 AutoConnectAP，手机浏览器改密码
-- 🔌 **电容触摸** — IO5 单键操作
+- 🕐 **Beijing Time** — NTP synced, 48px digital clock
+- 🌤️ **Dual-city Weather** — Beijing + Singapore via OpenWeatherMap API
+- 💬 **Real-time Status** — 8 moods: Free / Play / Busy / MissU / Eat / Study / Sleep / Soccer
+- 🎨 **Partner Mood Icon** — Shows partner's current mood icon beside the clock
+- 💗 **Heart Messaging** — Tap to send a heart. Hearts pile up on partner's screen. Tap to accept all (max 99).
+- 📡 **MQTT Communication** — Tokyo VPS relay with retained messages. Survives reboots.
+- 📶 **WiFi Portal** — Auto-opens hotspot `AutoConnectAP` if WiFi fails. Phone browser to reconfigure.
+- 🔌 **Capacitive Touch** — Single-button operation via IO5
 
-## 硬件
+## Hardware
 
-| 组件 | 型号 |
-|------|------|
-| 主控 | ESP32-S3 |
-| 屏幕 | ST7789 240×240 3线 SPI |
-| 触摸 | 单键电容 (IO5) |
-| 音频 | ES8311（本项目未使用） |
+| Component | Model |
+|-----------|-------|
+| MCU | ESP32-S3 |
+| Display | ST7789 240×240 3-wire SPI |
+| Touch | Single capacitive key (IO5) |
+| Audio | ES8311 (unused) |
 
-### 引脚
+### Pinout
 
-| 功能 | GPIO |
-|------|:----:|
+| Function | GPIO |
+|----------|:----:|
 | MOSI | 1 |
 | SCLK | 18 |
 | DC | 17 |
 | RST | 6 |
-| CS | —（硬接地） |
-| 背光 | 2 |
-| 触摸键 | 5 |
+| CS | — (GND) |
+| Backlight | 2 |
+| Touch Key | 5 |
 
-## 快速开始
+## Quick Start
 
-### 1. 克隆
+### 1. Clone
 
 ```bash
 git clone https://github.com/EileenClara/Whisper.git
 ```
 
-### 2. 安装依赖库
+### 2. Install Libraries
 
-Arduino IDE → 库管理器，搜索安装：
+Arduino IDE → Library Manager, install:
 
-- **TFT_eSPI**（Bodmer）
-- **TJpg_Decoder**（Bodmer）
-- **PubSubClient**（Nick O'Leary）
-- **ArduinoJson v7**（Benoit Blanchon）
-- **Time**（Michael Margolis）
+- **TFT_eSPI** (Bodmer)
+- **TJpg_Decoder** (Bodmer)
+- **PubSubClient** (Nick O'Leary)
+- **ArduinoJson v7** (Benoit Blanchon)
+- **Time** (Michael Margolis)
 
-### 3. 配置 TFT_eSPI
+### 3. Configure TFT_eSPI
 
-将项目中的 `User_Setup.h` 覆盖到：
+Overwrite the library's `User_Setup.h` with the one in this repo:
 ```
-文档/Arduino/libraries/TFT_eSPI/User_Setup.h
+Documents/Arduino/libraries/TFT_eSPI/User_Setup.h
 ```
 
-### 4. 修 PubSubClient 包大小
+### 4. Increase PubSubClient Packet Size
 
-编辑 `文档/Arduino/libraries/PubSubClient/src/PubSubClient.h`：
+Edit `Documents/Arduino/libraries/PubSubClient/src/PubSubClient.h`:
 ```cpp
-#define MQTT_MAX_PACKET_SIZE 1024  // 原 256 → 1024
+#define MQTT_MAX_PACKET_SIZE 1024  // was 256
 ```
 
-### 5. 配置 WiFi + VPS
+### 5. Set WiFi + VPS
 
-编辑 `config.h`：
+In `config.h`:
 ```cpp
-#define MQTT_BROKER_HOST "你的VPS_IP"
+#define MQTT_BROKER_HOST "your-vps-ip"
 ```
 
-编辑 `SmallDesktopDisplay.ino` 顶部：
+In `SmallDesktopDisplay.ino`:
 ```cpp
-const char* WIFI_SSID = "你的WiFi名";
-const char* WIFI_PWD  = "你的WiFi密码";
+const char* WIFI_SSID = "your-wifi";
+const char* WIFI_PWD  = "your-password";
 ```
 
-### 6. VPS 部署
+### 6. VPS Deployment
 
-在 VPS 上安装 Mosquitto 并上传天气代理：
+Install Mosquitto and upload the weather proxy:
 
 ```bash
-# VPS 上
+# On VPS
 apt install mosquitto -y
-# 复制 vps/mosquitto.conf 到 /etc/mosquitto/mosquitto.conf
+# Copy vps/mosquitto.conf to /etc/mosquitto/mosquitto.conf
 systemctl restart mosquitto
 
 pip3 install paho-mqtt requests
 nohup python3 -u vps/weather_proxy.py > /var/log/sdd-weather.log 2>&1 &
 ```
 
-### 7. 烧录
+### 7. Flash
 
-- 开发板：`ESP32S3 Dev Module`
-- 分区方案：`Huge APP (3MB No OTA/1MB SPIFFS)`
-- 端口：COM5
-- 首次开机在串口输入 `1`（yg）或 `2`（vv）选择身份
+- Board: `ESP32S3 Dev Module`
+- Partition Scheme: `Huge APP (3MB No OTA/1MB SPIFFS)`
+- On first boot, open Serial Monitor and type `1` (yougo) or `2` (vv) to set identity.
 
-## 操作
+## Controls
 
-| 操作 | 主屏 | 状态选择页 |
-|------|------|-----------|
-| 短摸 (<0.8s) | 发送爱心 | 切下一个状态 |
-| 长按 (>0.8s) | 打开状态选择 | — |
-| 3秒不摸 | — | 自动确认返回 |
-| 串口 `m` | 打开状态选择 | 输入数字选状态 |
-| 串口 `h` | 发送爱心 | — |
-| 串口 `w` | 刷新天气 | — |
+| Action | Main Screen | Mood Picker |
+|--------|-------------|-------------|
+| Short tap (<0.8s) | Send heart | Next mood |
+| Long press (>0.8s) | Open mood picker | — |
+| 3s idle | — | Auto-confirm & return |
+| Serial `m` | Open mood picker | Select by number |
+| Serial `h` | Send heart | — |
+| Serial `w` | Refresh weather | — |
 
-## MQTT 协议
+## MQTT Protocol
 
-| 主题 | 方向 | 说明 |
-|------|------|------|
-| `sdd/{id}/status` | 发布 (retained) | 在线状态 |
-| `sdd/{id}/mood` | 发布 (retained) | 0-7 状态值 |
-| `sdd/{id}/heart/send` | 发布 (retained) | 发送爱心 `{count:N}` |
-| `sdd/{id}/heart/ack` | 发布 | 接受爱心 |
-| `sdd/+/weather/req` | 订阅 | 天气请求 |
-| `sdd/weather/resp` | 订阅 | 天气响应 |
+| Topic | Direction | Description |
+|-------|-----------|-------------|
+| `sdd/{id}/status` | Publish (retained) | Online status |
+| `sdd/{id}/mood` | Publish (retained) | Mood 0-7 |
+| `sdd/{id}/heart/send` | Publish (retained) | Send heart `{count:N}` |
+| `sdd/{id}/heart/ack` | Publish | Accept hearts |
+| `sdd/+/weather/req` | Subscribe | Weather request |
+| `sdd/weather/resp` | Subscribe | Weather response |
 
-## 架构
+## Architecture
 
 ```
-ESP32-S3 (yg)  ←──MQTT/TLS──→  VPS Mosquitto  ←──MQTT/TLS──→  ESP32-S3 (vv)
+ESP32-S3 (yougo)  ←──MQTT──→  VPS Mosquitto  ←──MQTT──→  ESP32-S3 (vv)
                                     │
                             weather_proxy.py
                                     │
