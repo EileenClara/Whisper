@@ -11,6 +11,7 @@ public:
     static void begin(const char* fallbackSSID, const char* fallbackPWD);
     static void loop();
     static bool isConnected();
+    static bool justConnected();  // 刚连上, 消费后变 false
     static WiFiState state();
     static String localIP();
 

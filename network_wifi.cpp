@@ -14,6 +14,7 @@ unsigned long NetworkWiFi::_bootTime = 0;
 String NetworkWiFi::_ssid = "";
 String NetworkWiFi::_pwd = "";
 bool NetworkWiFi::_portalOpen = false;
+static bool _justConnected = false;
 
 static WebServer* portalServer = nullptr;
 
@@ -63,6 +64,7 @@ void NetworkWiFi::loop() {
         _ssid = WiFi.SSID();
         _pwd  = WiFi.psk();
         StoragePrefs::setWiFiCredentials(_ssid, _pwd);
+        _justConnected = true;
         if (_portalOpen) {
             if (portalServer) { portalServer->stop(); delete portalServer; portalServer = nullptr; }
             WiFi.softAPdisconnect(true);
@@ -133,5 +135,6 @@ void NetworkWiFi::loop() {
 }
 
 bool NetworkWiFi::isConnected() { return WiFi.status() == WL_CONNECTED; }
+bool NetworkWiFi::justConnected() { bool r = _justConnected; _justConnected = false; return r; }
 WiFiState NetworkWiFi::state() { return _state; }
 String NetworkWiFi::localIP() { return WiFi.localIP().toString(); }

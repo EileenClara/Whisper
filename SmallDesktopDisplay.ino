@@ -165,6 +165,11 @@ void loop() {
     // 始终运行
     NetworkWiFi::loop();
 
+    // WiFi 刚连上 (从 portal 退出) → 重绘主屏
+    if (NetworkWiFi::justConnected()) {
+        drawMainScreen();
+    }
+
     // 每 10 秒输出状态
     static unsigned long lastStatus = 0;
     if (millis() - lastStatus > 10000) {
