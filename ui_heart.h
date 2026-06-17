@@ -48,6 +48,7 @@ private:
     static void _becomeSender();
     static void _becomeReceiver();
     static void _clear();
+    static void _saveState();
 
     static void _drawSenderArea();
     static void _drawReceiverArea();

@@ -17,11 +17,15 @@ UIHeart::HeartDrop UIHeart::_hearts[100];
 int UIHeart::_animFrame = 0;
 
 void UIHeart::begin() {
-    _role = HR_NONE;
-    _count = 0;
+    int r = StoragePrefs::getHeartRole();
+    _role = (HeartRole)r;
+    _count = StoragePrefs::getHeartCount();
     _lastSendTime = StoragePrefs::getLastHeartTime();
     _animFrame = 0;
     memset(_hearts, 0, sizeof(_hearts));
+    if (_role != HR_NONE) {
+        Serial.printf("[Heart] Restored: role=%d count=%d\n", r, _count);
+    }
 }
 
 void UIHeart::loop() {
@@ -45,11 +49,10 @@ void UIHeart::loop() {
 void UIHeart::onTap() {
     switch (_role) {
         case HR_NONE:
-            // 无角色 → 成为发送方，发第一颗
             _becomeSender();
             _count = 1;
             _lastSendTime = millis();
-            StoragePrefs::setLastHeartTime(_lastSendTime);
+            _saveState();
             NetworkMQTT::publishHeartSend(1, AppIdentity::partnerName());
             Serial.println("[Heart] Sent #1 — now SENDER");
             break;
@@ -67,7 +70,7 @@ void UIHeart::onTap() {
             }
             _count++;
             _lastSendTime = millis();
-            StoragePrefs::setLastHeartTime(_lastSendTime);
+            _saveState();
             NetworkMQTT::publishHeartSend(_count, AppIdentity::partnerName());
             Serial.printf("[Heart] Sent #%d\n", _count);
             break;
@@ -105,6 +108,7 @@ void UIHeart::onHeartReceived(const String& json) {
         _becomeReceiver();
     }
     _count = incomingCount;
+    _saveState();
 
     // 新增爱心掉落动画
     for (int n = 0; n < newHearts && _count <= HEART_MAX_COUNT; n++) {
@@ -134,14 +138,19 @@ void UIHeart::onHeartAck(const String& json) {
 }
 
 // ===== 内部 =====
-void UIHeart::_becomeSender()   { _role = HR_SENDER; }
-void UIHeart::_becomeReceiver() { _role = HR_RECEIVER; }
+void UIHeart::_becomeSender()   { _role = HR_SENDER; _saveState(); }
+void UIHeart::_becomeReceiver() { _role = HR_RECEIVER; _saveState(); }
 void UIHeart::_clear() {
     _role = HR_NONE;
     _count = 0;
     _lastSendTime = 0;
-    StoragePrefs::setLastHeartTime(0);
+    StoragePrefs::clearHeartState();
     memset(_hearts, 0, sizeof(_hearts));
+}
+void UIHeart::_saveState() {
+    StoragePrefs::setHeartRole((int)_role);
+    StoragePrefs::setHeartCount(_count);
+    StoragePrefs::setLastHeartTime(_lastSendTime);
 }
 
 HeartRole UIHeart::role() { return _role; }

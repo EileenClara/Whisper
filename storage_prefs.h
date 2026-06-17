@@ -41,9 +41,14 @@ public:
     static uint8_t getWeatherInterval();
     static void    setWeatherInterval(uint8_t mins);
 
-    // ---- 爱心冷却时间戳 ----
+    // ---- 爱心状态 ----
     static unsigned long getLastHeartTime();
     static void          setLastHeartTime(unsigned long t);
+    static int           getHeartCount();        // 爱心计数
+    static void          setHeartCount(int c);
+    static int           getHeartRole();         // 0=NONE 1=SENDER 2=RECEIVER
+    static void          setHeartRole(int r);
+    static void          clearHeartState();      // 清空所有爱心状态
 
     // ---- 天气缓存 ----
     static String getWeatherCache();

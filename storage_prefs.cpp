@@ -83,13 +83,29 @@ void StoragePrefs::setWeatherInterval(uint8_t mins) {
     _prefs.putUChar("wx_iv", constrain(mins, 5, 60));
 }
 
-// ---- 爱心冷却 ----
+// ---- 爱心 ----
 unsigned long StoragePrefs::getLastHeartTime() {
     return _prefs.getULong("ht_time", 0);
 }
-
 void StoragePrefs::setLastHeartTime(unsigned long t) {
     _prefs.putULong("ht_time", t);
+}
+int StoragePrefs::getHeartCount() {
+    return _prefs.getInt("ht_cnt", 0);
+}
+void StoragePrefs::setHeartCount(int c) {
+    _prefs.putInt("ht_cnt", c);
+}
+int StoragePrefs::getHeartRole() {
+    return _prefs.getInt("ht_role", 0);
+}
+void StoragePrefs::setHeartRole(int r) {
+    _prefs.putInt("ht_role", r);
+}
+void StoragePrefs::clearHeartState() {
+    _prefs.remove("ht_time");
+    _prefs.remove("ht_cnt");
+    _prefs.remove("ht_role");
 }
 
 // ---- 天气缓存 ----
