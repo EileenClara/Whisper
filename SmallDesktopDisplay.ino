@@ -268,7 +268,7 @@ void loop() {
     // ===== 按需刷新 (脏区域) =====
     if (currentPage == PAGE_MAIN) {
         UIClock::update();
-        // 补画对方状态图标 (时钟 fillRect 会擦掉它)
+        // 对方状态图标 (48x48 pushImage 很快, 每次画保险)
         {
             TFT_eSPI& t = DisplayScreen::tft();
             if (UIStatus::partnerOnline()) {

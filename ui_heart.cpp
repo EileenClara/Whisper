@@ -68,7 +68,6 @@ void UIHeart::onTap() {
             NetworkMQTT::publishHeartSend(_count, AppIdentity::partnerName());
             Serial.printf("[Heart] Sent #%d\n", _count);
             break;
-        }
 
         case HR_RECEIVER:
             // 接收方 → 接受所有爱心
