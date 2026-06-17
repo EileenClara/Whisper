@@ -18,6 +18,15 @@
 #include "weather_bridge.h"
 #include "weathernum.h"
 #include "app_identity.h"
+// 对方状态图标
+#include "img/mood_0.h"
+#include "img/mood_1.h"
+#include "img/mood_2.h"
+#include "img/mood_3.h"
+#include "img/mood_4.h"
+#include "img/mood_5.h"
+#include "img/mood_6.h"
+#include "img/mood_7.h"
 #include "ui_status.h"
 #include "ui_heart.h"
 
@@ -37,6 +46,15 @@ void drawMainScreen() {
 
     // 天气
     UIWeather::draw();
+    // 对方状态图标 (时钟左边, 48x48)
+    {
+        const uint16_t* icons[] = {mood_0_img,mood_1_img,mood_2_img,mood_3_img,
+                                   mood_4_img,mood_5_img,mood_6_img,mood_7_img};
+        int pm = UIStatus::partnerMood();
+        tft.setSwapBytes(true);
+        tft.pushImage(4, 88, MOOD_W, MOOD_H, icons[pm]);
+        tft.setSwapBytes(false);
+    }
     // 时钟
     UIClock::draw();
     // 状态
