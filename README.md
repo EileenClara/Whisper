@@ -11,7 +11,8 @@ ESP32-S3 couple's interactive desktop display. Two devices communicate via MQTT,
 - 🌤️ **Dual-city Weather** — Beijing + Singapore via OpenWeatherMap API
 - 💬 **Real-time Status** — 8 moods: Free / Play / Busy / MissU / Eat / Study / Sleep / Soccer
 - 🎨 **Partner Mood Icon** — Shows partner's current mood icon beside the clock
-- 💗 **Heart Messaging** — Tap to send a heart. Hearts pile up on partner's screen. Tap to accept all (max 99).
+- 💗 **Heart Messaging** — Tap to send. Hearts scatter randomly on partner's screen. No cooldown, max 52. Accept to clear all.
+- 🎯 **Adaptive Touch** — Auto-calibrates threshold per device on boot
 - 📡 **MQTT Communication** — Tokyo VPS relay with retained messages. Survives reboots.
 - 📶 **WiFi Portal** — Auto-opens hotspot `AutoConnectAP` if WiFi fails. Phone browser to reconfigure.
 - 🔌 **Capacitive Touch** — Single-button operation via IO5
