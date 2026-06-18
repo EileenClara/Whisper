@@ -101,7 +101,7 @@ void UIHeart::onHeartReceived(const String& json) {
         int idx = _count - newHearts + n;
         if (idx < 100) {
             _hearts[idx].x = random(8, 220);
-            _hearts[idx].y = random(188, 228);
+            _hearts[idx].y = random(190, 228);
             _hearts[idx].targetY = 0;  // unused
             _hearts[idx].angle = random(0, 20);
             _hearts[idx].landed = true;
@@ -206,10 +206,13 @@ void UIHeart::_drawReceiverArea() {
         _drawHeart(_hearts[i].x, _hearts[i].y, size, TFT_RED);
     }
 
+    // 状态栏盖在爱心上面, 挡住溢出
+    UIStatus::drawStatusBar();
+
     if (_count > 0) {
         tft.setTextColor(TFT_WHITE, TFT_BLACK);
         tft.setTextSize(1);
-        tft.setCursor(50, 222);
+        tft.setCursor(50, 225);
         tft.printf("Tap to accept (%d)", _count);
     }
 }
