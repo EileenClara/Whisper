@@ -4,8 +4,6 @@
  */
 
 #include "ui_weather.h"
-// #include "weathernum.h"  // 图标暂时不用
-
 int UIWeather::_lastBjTemp = -999;
 int UIWeather::_lastSgTemp = -999;
 

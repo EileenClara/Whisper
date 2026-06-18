@@ -5,7 +5,6 @@
 #include "app_identity.h"
 #include "storage_prefs.h"
 #include "display_screen.h"
-#include "font/ZdyLwFont_20.h"
 
 DeviceID AppIdentity::_id = ID_NONE;
 

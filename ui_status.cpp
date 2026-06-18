@@ -33,7 +33,8 @@ void UIStatus::drawStatusBar() {
     tft.setTextSize(2);
     tft.setTextColor(mc, TFT_BLACK);
     tft.setCursor(2, 162);
-    tft.print("yg:");
+    tft.print(AppIdentity::name());
+    tft.print(":");
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
     tft.print(moodEn[_ownMood]);
 
@@ -43,7 +44,8 @@ void UIStatus::drawStatusBar() {
     tft.setTextSize(2);
     tft.setTextColor(mc, TFT_BLACK);
     tft.setCursor(124, 162);
-    tft.print("vv:");
+    tft.print(AppIdentity::partnerName());
+    tft.print(":");
     if (_partnerOnline) {
         tft.setTextColor(TFT_WHITE, TFT_BLACK);
         tft.print(moodEn[_partnerMood]);

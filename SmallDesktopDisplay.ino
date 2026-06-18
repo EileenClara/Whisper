@@ -16,7 +16,6 @@
 #include "ui_clock.h"
 #include "ui_weather.h"
 #include "weather_bridge.h"
-#include "weathernum.h"
 #include "app_identity.h"
 // 对方状态图标
 #include "img/mood_0.h"

@@ -88,18 +88,22 @@ void UIHeart::onHeartReceived(const String& json) {
         incomingCount = doc["count"] | 1;
     }
 
-    // 如果已经收到过同样的数量, 跳过 (防止 retained 重复)
+    // 如果我是发送方 → 对方也在发, 切换为接收方
+    if (_role == HR_SENDER) {
+        Serial.println("[Heart] Partner also sending — switching to receiver");
+        _becomeReceiver();
+        _count = 0;
+    }
+
+    // 已经收过同样的数量 → 跳过
     if (_role == HR_RECEIVER && incomingCount <= _count) {
         Serial.printf("[Heart] Already have %d >= %d, skip\n", _count, incomingCount);
         return;
     }
 
-    // 新增的爱心数
+    // 新增爱心数
     int newHearts = (_role == HR_NONE) ? incomingCount : (incomingCount - _count);
-
-    if (_role == HR_NONE) {
-        _becomeReceiver();
-    }
+    if (_role == HR_NONE) _becomeReceiver();
     _count = incomingCount;
     _saveState();
 
