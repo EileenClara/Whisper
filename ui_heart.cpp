@@ -31,21 +31,7 @@ void UIHeart::begin() {
 
 void UIHeart::loop() {
     _animFrame++;
-
-    if (_role == HR_RECEIVER) {
-        bool anyMoving = false;
-        for (int i = 0; i < _count && i < 100; i++) {
-            if (!_hearts[i].landed && _hearts[i].y < _hearts[i].targetY) {
-                _hearts[i].y += 3;
-                if (_hearts[i].y >= _hearts[i].targetY) {
-                    _hearts[i].y = _hearts[i].targetY;
-                    _hearts[i].landed = true;
-                }
-                anyMoving = true;
-            }
-        }
-        if (anyMoving) DisplayScreen::markDirty(ZONE_HEART);
-    }
+    // 无下落动画, 直接静态摆放
 }
 
 // ===== 交互 =====
@@ -110,15 +96,15 @@ void UIHeart::onHeartReceived(const String& json) {
     _count = incomingCount;
     _saveState();
 
-    // 新增爱心掉落动画
+    // 新增爱心, 随机摆在底部
     for (int n = 0; n < newHearts && _count <= HEART_MAX_COUNT; n++) {
         int idx = _count - newHearts + n;
         if (idx < 100) {
-            _hearts[idx].x = random(5, 220);
-            _hearts[idx].y = 0;
-            _hearts[idx].targetY = random(20, 215);
-            _hearts[idx].angle = random(0, 30);
-            _hearts[idx].landed = false;
+            _hearts[idx].x = random(8, 220);
+            _hearts[idx].y = random(188, 228);
+            _hearts[idx].targetY = 0;  // unused
+            _hearts[idx].angle = random(0, 20);
+            _hearts[idx].landed = true;
         }
     }
 
@@ -213,29 +199,18 @@ void UIHeart::_drawSenderArea() {
 
 void UIHeart::_drawReceiverArea() {
     TFT_eSPI& tft = DisplayScreen::tft();
-    // 全屏爱心覆盖 (散落)
-    tft.fillScreen(TFT_BLACK);
+    tft.fillRect(0, 184, 240, 56, TFT_BLACK);
 
     for (int i = 0; i < _count && i < 100; i++) {
-        int hx = _hearts[i].x;
-        int hy = _hearts[i].y;
-        if (hy <= 1) continue;  // 还没开始下落
-        int size = 10 + (i % 5);
-        _drawHeart(hx, hy, size, TFT_RED);
+        int size = 10 + (i % 4);
+        _drawHeart(_hearts[i].x, _hearts[i].y, size, TFT_RED);
     }
 
-    // 底部操作提示
-    tft.fillRect(0, 210, 240, 30, 0x2104);
     if (_count > 0) {
-        tft.setTextColor(TFT_WHITE, 0x2104);
-        tft.setTextSize(2);
-        tft.setCursor(30, 214);
+        tft.setTextColor(TFT_WHITE, TFT_BLACK);
+        tft.setTextSize(1);
+        tft.setCursor(50, 222);
         tft.printf("Tap to accept (%d)", _count);
-    } else {
-        tft.setTextColor(0x7BEF, 0x2104);
-        tft.setTextSize(2);
-        tft.setCursor(65, 214);
-        tft.print("Waiting...");
     }
 }
 
