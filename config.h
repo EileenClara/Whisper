@@ -74,7 +74,7 @@
 // 爱心
 // ============================
 #define HEART_COOLDOWN_MS       (30 * 60 * 1000)  // 发送冷却 30 分钟
-#define HEART_MAX_COUNT         99                // 最大堆积数
+#define HEART_MAX_COUNT         52  // 最大爱心数
 #define HEART_TIMEOUT_MS        (120 * 1000)      // 单颗发送后无回应 2 分钟 (目前不自动过期)
 
 // ============================

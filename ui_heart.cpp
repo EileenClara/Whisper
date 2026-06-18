@@ -3,6 +3,7 @@
  */
 
 #include "ui_heart.h"
+#include "ui_status.h"    // drawMainScreen()
 #include <ArduinoJson.h>
 #include "display_screen.h"
 #include "network_mqtt.h"
@@ -31,17 +32,19 @@ void UIHeart::begin() {
 void UIHeart::loop() {
     _animFrame++;
 
-    // 接收方动画: 爱心下落
     if (_role == HR_RECEIVER) {
-        for (int i = 0; i < _count; i++) {
+        bool anyMoving = false;
+        for (int i = 0; i < _count && i < 100; i++) {
             if (!_hearts[i].landed && _hearts[i].y < _hearts[i].targetY) {
-                _hearts[i].y += 3;  // 下落速度
+                _hearts[i].y += 3;
                 if (_hearts[i].y >= _hearts[i].targetY) {
                     _hearts[i].y = _hearts[i].targetY;
                     _hearts[i].landed = true;
                 }
+                anyMoving = true;
             }
         }
+        if (anyMoving) DisplayScreen::markDirty(ZONE_HEART);
     }
 }
 
@@ -111,10 +114,10 @@ void UIHeart::onHeartReceived(const String& json) {
     for (int n = 0; n < newHearts && _count <= HEART_MAX_COUNT; n++) {
         int idx = _count - newHearts + n;
         if (idx < 100) {
-            _hearts[idx].x = random(10, 220);
+            _hearts[idx].x = random(5, 220);
             _hearts[idx].y = 0;
-            _hearts[idx].targetY = random(185, 225);
-            _hearts[idx].angle = random(0, 20);
+            _hearts[idx].targetY = random(20, 215);
+            _hearts[idx].angle = random(0, 30);
             _hearts[idx].landed = false;
         }
     }
@@ -210,24 +213,29 @@ void UIHeart::_drawSenderArea() {
 
 void UIHeart::_drawReceiverArea() {
     TFT_eSPI& tft = DisplayScreen::tft();
-    tft.fillRect(0, 184, 240, 56, TFT_BLACK);
+    // 全屏爱心覆盖 (散落)
+    tft.fillScreen(TFT_BLACK);
 
     for (int i = 0; i < _count && i < 100; i++) {
         int hx = _hearts[i].x;
         int hy = _hearts[i].y;
-        if (hy <= 0) continue;
-        int size = 12 + (i % 3);
+        if (hy <= 1) continue;  // 还没开始下落
+        int size = 10 + (i % 5);
         _drawHeart(hx, hy, size, TFT_RED);
     }
 
+    // 底部操作提示
+    tft.fillRect(0, 210, 240, 30, 0x2104);
     if (_count > 0) {
-        tft.setSwapBytes(true);
-        tft.pushImage(100, 210, LOVE_W, LOVE_H, love_img);
-        tft.setSwapBytes(false);
-        tft.setTextColor(TFT_WHITE, TFT_BLACK);
-        tft.setTextSize(1);
-        tft.setCursor(60, 232);
+        tft.setTextColor(TFT_WHITE, 0x2104);
+        tft.setTextSize(2);
+        tft.setCursor(30, 214);
         tft.printf("Tap to accept (%d)", _count);
+    } else {
+        tft.setTextColor(0x7BEF, 0x2104);
+        tft.setTextSize(2);
+        tft.setCursor(65, 214);
+        tft.print("Waiting...");
     }
 }
 
