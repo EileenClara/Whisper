@@ -18,6 +18,7 @@ private:
     static bool _longFired;         // 本次按压已触发过长按
     static unsigned long _downTime; // 按下时刻
     static int _baseline;
+    static int _threshold;
 };
 
 #endif
