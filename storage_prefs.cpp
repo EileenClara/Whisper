@@ -15,23 +15,28 @@ void StoragePrefs::end() {
     _prefs.end();
 }
 
-// ---- WiFi ----
-String StoragePrefs::getWiFiSSID() {
-    return _prefs.getString("wifi_ssid", "");
+// ---- WiFi (最多 2 个) ----
+String StoragePrefs::getWiFiSSID(int n) {
+    char k[12]; snprintf(k, 12, "wifi_%d_s", n);
+    return _prefs.getString(k, "");
 }
-
-String StoragePrefs::getWiFiPassword() {
-    return _prefs.getString("wifi_pwd", "");
+String StoragePrefs::getWiFiPassword(int n) {
+    char k[12]; snprintf(k, 12, "wifi_%d_p", n);
+    return _prefs.getString(k, "");
 }
-
-void StoragePrefs::setWiFiCredentials(const String& ssid, const String& pass) {
-    _prefs.putString("wifi_ssid", ssid);
-    _prefs.putString("wifi_pwd", pass);
+void StoragePrefs::setWiFiCredentials(const String& ssid, const String& pass, int n) {
+    char k[12];
+    snprintf(k, 12, "wifi_%d_s", n); _prefs.putString(k, ssid);
+    snprintf(k, 12, "wifi_%d_p", n); _prefs.putString(k, pass);
 }
-
+int StoragePrefs::wifiCount() {
+    if (getWiFiSSID(1).length() > 0) return 2;
+    if (getWiFiSSID(0).length() > 0) return 1;
+    return 0;
+}
 void StoragePrefs::clearWiFiCredentials() {
-    _prefs.remove("wifi_ssid");
-    _prefs.remove("wifi_pwd");
+    _prefs.remove("wifi_0_s"); _prefs.remove("wifi_0_p");
+    _prefs.remove("wifi_1_s"); _prefs.remove("wifi_1_p");
 }
 
 // ---- 设备身份 ----

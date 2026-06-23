@@ -8,7 +8,7 @@ enum class WiFiState { DISCONNECTED, CONNECTING, CONNECTED };
 
 class NetworkWiFi {
 public:
-    static void begin(const char* fallbackSSID, const char* fallbackPWD);
+    static void begin();
     static void loop();
     static bool isConnected();
     static bool justConnected();  // 刚连上, 消费后变 false
@@ -20,6 +20,7 @@ private:
     static unsigned long _lastRetry, _bootTime;
     static String _ssid, _pwd;
     static bool _portalOpen;
+    static int _wifiIdx;
 };
 
 #endif

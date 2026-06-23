@@ -29,9 +29,11 @@
 #include "ui_status.h"
 #include "ui_heart.h"
 
-// ===== WiFi 凭证 =====
-const char* WIFI_SSID = "uskj302";
-const char* WIFI_PWD  = "qwertyuiop01";
+// ===== WiFi 凭证 (会存入 Preferences, 首次烧录用这些) =====
+const char* WIFI_1_SSID = "uskj302";
+const char* WIFI_1_PWD  = "qwertyuiop01";
+const char* WIFI_2_SSID = "184******68的Pura 70 Ultra";
+const char* WIFI_2_PWD  = "1029384756";
 
 // ===== 主屏绘制 (全量) =====
 void drawMainScreen() {
@@ -149,8 +151,12 @@ void setup() {
         Serial.printf("[Setup] Identity: %s (saved)\n", AppIdentity::name());
     }
 
-    // 7. WiFi
-    NetworkWiFi::begin(WIFI_SSID, WIFI_PWD);
+    // 7. WiFi — 存两个凭证
+    if (StoragePrefs::wifiCount() == 0) {
+        StoragePrefs::setWiFiCredentials(WIFI_1_SSID, WIFI_1_PWD, 0);
+        StoragePrefs::setWiFiCredentials(WIFI_2_SSID, WIFI_2_PWD, 1);
+    }
+    NetworkWiFi::begin();
 
     // 8. NTP
     NetworkNTP::begin();

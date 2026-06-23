@@ -14,11 +14,12 @@ public:
     static void begin();
     static void end();
 
-    // ---- WiFi ----
-    static String getWiFiSSID();
-    static String getWiFiPassword();
-    static void   setWiFiCredentials(const String& ssid, const String& pass);
+    // ---- WiFi (最多 2 个) ----
+    static String getWiFiSSID(int n = 0);
+    static String getWiFiPassword(int n = 0);
+    static void   setWiFiCredentials(const String& ssid, const String& pass, int n = 0);
     static void   clearWiFiCredentials();
+    static int    wifiCount();  // 存了几个 WiFi
 
     // ---- 设备身份 ----
     static bool   isIdentitySet();           // 是否已选择身份
